@@ -6,5 +6,7 @@ __pycache__/
 app/node_modules/
 app/dist/
 .DS_Store
+# Map tiles are hosted on Cloudflare R2 (see app/.env VITE_TILES_BASE_URL),
+# not committed. Build them locally with scripts/build_tiles.py if needed.
 *.pmtiles
 !app/public/tiles/.gitkeep

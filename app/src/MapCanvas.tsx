@@ -28,7 +28,11 @@ function ensureProtocol() {
 }
 
 function tilesUrl(path: string) {
-  return `pmtiles://${window.location.origin}${path}`
+  // Absolute URLs (e.g. an R2/CDN host) pass straight through; otherwise resolve
+  // against VITE_TILES_BASE_URL when set, falling back to the current origin.
+  if (/^https?:\/\//.test(path)) return `pmtiles://${path}`
+  const base = import.meta.env.VITE_TILES_BASE_URL || window.location.origin
+  return `pmtiles://${base.replace(/\/$/, '')}${path}`
 }
 
 function parseMix(raw: unknown): PlaceInfo['mix'] {
