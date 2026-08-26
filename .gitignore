@@ -1,0 +1,10 @@
+.venv/
+data/raw/
+data/processed/
+__pycache__/
+*.pyc
+app/node_modules/
+app/dist/
+.DS_Store
+*.pmtiles
+!app/public/tiles/.gitkeep

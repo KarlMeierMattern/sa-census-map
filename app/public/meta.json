@@ -1,0 +1,194 @@
+{
+  "title": "A South African Mosaic",
+  "languages": [
+    {
+      "id": "zul",
+      "label": "isiZulu",
+      "aliases": [
+        "zulu",
+        "isizulu"
+      ],
+      "color": "#e2b33a"
+    },
+    {
+      "id": "xho",
+      "label": "isiXhosa",
+      "aliases": [
+        "xhosa",
+        "isixhosa"
+      ],
+      "color": "#2aa3a6"
+    },
+    {
+      "id": "afr",
+      "label": "Afrikaans",
+      "aliases": [
+        "afrikaans"
+      ],
+      "color": "#e0702e"
+    },
+    {
+      "id": "eng",
+      "label": "English",
+      "aliases": [
+        "english"
+      ],
+      "color": "#4c7bd9"
+    },
+    {
+      "id": "nso",
+      "label": "Sepedi",
+      "aliases": [
+        "sepedi",
+        "northern sotho",
+        "pedi"
+      ],
+      "color": "#3fa34a"
+    },
+    {
+      "id": "sot",
+      "label": "Sesotho",
+      "aliases": [
+        "sesotho",
+        "sotho",
+        "southern sotho"
+      ],
+      "color": "#8fbf3a"
+    },
+    {
+      "id": "tsn",
+      "label": "Setswana",
+      "aliases": [
+        "setswana",
+        "tswana"
+      ],
+      "color": "#c4c23a"
+    },
+    {
+      "id": "ssw",
+      "label": "siSwati",
+      "aliases": [
+        "siswati",
+        "swati",
+        "swazi"
+      ],
+      "color": "#d45a6a"
+    },
+    {
+      "id": "ven",
+      "label": "Tshivenda",
+      "aliases": [
+        "tshivenda",
+        "venda"
+      ],
+      "color": "#8a5ac8"
+    },
+    {
+      "id": "tso",
+      "label": "Xitsonga",
+      "aliases": [
+        "xitsonga",
+        "tsonga"
+      ],
+      "color": "#c44f9a"
+    },
+    {
+      "id": "nbl",
+      "label": "isiNdebele",
+      "aliases": [
+        "isindebele",
+        "ndebele"
+      ],
+      "color": "#a0673a"
+    },
+    {
+      "id": "sgn",
+      "label": "Sign language",
+      "aliases": [
+        "sign",
+        "sasl"
+      ],
+      "color": "#7a8894"
+    },
+    {
+      "id": "oth",
+      "label": "Other",
+      "aliases": [
+        "other"
+      ],
+      "color": "#b9b3a8"
+    }
+  ],
+  "populationGroups": [
+    {
+      "id": "bl",
+      "label": "Black African",
+      "aliases": [
+        "black",
+        "african"
+      ],
+      "color": "#2f8f5b"
+    },
+    {
+      "id": "co",
+      "label": "Coloured",
+      "aliases": [
+        "coloured",
+        "colored"
+      ],
+      "color": "#e07a3d"
+    },
+    {
+      "id": "in",
+      "label": "Indian or Asian",
+      "aliases": [
+        "indian",
+        "asian"
+      ],
+      "color": "#7b5cc4"
+    },
+    {
+      "id": "wh",
+      "label": "White",
+      "aliases": [
+        "white"
+      ],
+      "color": "#4f8ed6"
+    },
+    {
+      "id": "ot",
+      "label": "Other",
+      "aliases": [
+        "other"
+      ],
+      "color": "#9aa0a6"
+    }
+  ],
+  "vintages": [
+    {
+      "id": "sal-2011",
+      "label": "2011 small areas",
+      "tiles": "/tiles/sal-2011.pmtiles",
+      "layer": "sal",
+      "source": "Census 2011 small areas. First language spoken in the household.",
+      "hasForeignBorn": false
+    },
+    {
+      "id": "muni-2011",
+      "label": "2011 municipalities",
+      "tiles": "/tiles/muni-2011.pmtiles",
+      "layer": "muni",
+      "source": "Census 2011 local and metropolitan municipalities.",
+      "hasForeignBorn": false
+    },
+    {
+      "id": "muni-2022",
+      "label": "2022 municipalities",
+      "tiles": "/tiles/muni-2022.pmtiles",
+      "layer": "muni",
+      "source": "Census 2022 municipalities for population group and foreign-born share. Language mix is Census 2011 on the same municipalities; Stats SA has not published 2022 household language at this grain.",
+      "hasForeignBorn": true
+    }
+  ],
+  "attribution": "Census data: Statistics South Africa (Census 2011 and Census 2022). Boundaries: Statistics South Africa / Municipal Demarcation Board. Analysis and map by this project, independent of Stats SA."
+}
