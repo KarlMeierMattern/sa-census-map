@@ -279,22 +279,44 @@ export default function App() {
             )}
           </div>
           <p className="foot">
-            Census 2011 small areas (two languages allowed on the form; this map uses first language).
-            Census 2022 municipalities (one language). Percentages may not add to 100 on the 2011
-            view. {meta.attribution}
+          {mobile ? (
+            <details className="foot-details">
+              <summary>About the data</summary>
+              Census 2011 small areas (two languages allowed on the form; this map uses first language).
+              Census 2022 municipalities (one language). Percentages may not add to 100 on the 2011
+              view. {meta.attribution}
+            </details>
+          ) : (
+            <>
+              Census 2011 small areas (two languages allowed on the form; this map uses first language).
+              Census 2022 municipalities (one language). Percentages may not add to 100 on the 2011
+              view. {meta.attribution}
+            </>
+          )}
           </p>
         </div>
         )}
       </div>
       {place && (
-        <PlacePanel
-          place={place}
-          mode={mode}
-          languages={meta.languages}
-          groups={meta.populationGroups}
-          mobile={mobile}
-          onClose={() => setPlace(null)}
-        />
+        <>
+          {mobile && (
+            <button
+              type="button"
+              className="scrim"
+              aria-label="Close place details"
+              onClick={() => setPlace(null)}
+            />
+          )}
+          <PlacePanel
+            key={`${place.name}-${place.mn || ''}-${place.pr || ''}`}
+            place={place}
+            mode={mode}
+            languages={meta.languages}
+            groups={meta.populationGroups}
+            mobile={mobile}
+            onClose={() => setPlace(null)}
+          />
+        </>
       )}
     </div>
   )
