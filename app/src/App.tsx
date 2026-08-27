@@ -57,7 +57,6 @@ export default function App() {
   const [chromeOpen, setChromeOpen] = useState(() => window.innerWidth >= 721)
   const [meta, setMeta] = useState<Meta | null>(null)
   const [error, setError] = useState('')
-  const [vintageId, setVintageId] = useState('muni-2022')
   const [mode, setMode] = useState<MapMode>('language')
   const [highlight, setHighlight] = useState<Language | null>(null)
   const [place, setPlace] = useState<PlaceInfo | null>(null)
@@ -71,15 +70,11 @@ export default function App() {
         if (!res.ok) throw new Error('Map metadata is missing. Run the tile build.')
         return res.json()
       })
-      .then((data: Meta) => {
-        setMeta(data)
-        const preferred = data.vintages.find((item) => item.id === 'muni-2022') || data.vintages[0]
-        setVintageId(preferred?.id || 'sal-2011')
-      })
+      .then((data: Meta) => setMeta(data))
       .catch((err: Error) => setError(err.message))
   }, [])
 
-  const vintage: Vintage | undefined = meta?.vintages.find((item) => item.id === vintageId) || meta?.vintages[0]
+  const vintage: Vintage | undefined = meta?.vintages.find((item) => item.id === 'muni-2022')
 
   const catalog =
     mode === 'language'
@@ -219,23 +214,6 @@ export default function App() {
             )}
           </div>
           <div className="controls">
-            {meta.vintages.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={item.id === vintage.id ? 'active' : ''}
-                onClick={() => {
-                  setVintageId(item.id)
-                  setPlace(null)
-                  if (mode === 'born' && !item.hasForeignBorn) {
-                    setMode('language')
-                    setHighlight(null)
-                  }
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
             <button
               type="button"
               className={mode === 'language' && !highlight ? 'active' : ''}
@@ -256,74 +234,66 @@ export default function App() {
             >
               Population group
             </button>
-            {vintage.hasForeignBorn && (
-              <button
-                type="button"
-                className={mode === 'born' && !highlight ? 'active' : ''}
-                onClick={() => {
-                  setMode('born')
-                  setHighlight(null)
-                }}
-              >
-                Foreign-born
-              </button>
-            )}
-            {vintage.hasExtendedStats && (
-              <>
-                <button
-                  type="button"
-                  className={mode === 'marital' && !highlight ? 'active' : ''}
-                  onClick={() => {
-                    setMode('marital')
-                    setHighlight(null)
-                  }}
-                >
-                  Marital status
-                </button>
-                <button
-                  type="button"
-                  className={mode === 'education' && !highlight ? 'active' : ''}
-                  onClick={() => {
-                    setMode('education')
-                    setHighlight(null)
-                  }}
-                >
-                  Education
-                </button>
-                <button
-                  type="button"
-                  className={mode === 'tenure' && !highlight ? 'active' : ''}
-                  onClick={() => {
-                    setMode('tenure')
-                    setHighlight(null)
-                  }}
-                >
-                  Tenure
-                </button>
-                <button
-                  type="button"
-                  className={mode === 'lighting' && !highlight ? 'active' : ''}
-                  onClick={() => {
-                    setMode('lighting')
-                    setHighlight(null)
-                  }}
-                >
-                  Lighting
-                </button>
-                {vintage.provinceTiles && (
-                  <button
-                    type="button"
-                    className={mode === 'religion' && !highlight ? 'active' : ''}
-                    onClick={() => {
-                      setMode('religion')
-                      setHighlight(null)
-                    }}
-                  >
-                    Religion
-                  </button>
-                )}
-              </>
-            )}
+            <button
+              type="button"
+              className={mode === 'born' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('born')
+                setHighlight(null)
+              }}
+            >
+              Foreign-born
+            </button>
+            <button
+              type="button"
+              className={mode === 'marital' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('marital')
+                setHighlight(null)
+              }}
+            >
+              Marital status
+            </button>
+            <button
+              type="button"
+              className={mode === 'education' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('education')
+                setHighlight(null)
+              }}
+            >
+              Education
+            </button>
+            <button
+              type="button"
+              className={mode === 'tenure' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('tenure')
+                setHighlight(null)
+              }}
+            >
+              Tenure
+            </button>
+            <button
+              type="button"
+              className={mode === 'lighting' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('lighting')
+                setHighlight(null)
+              }}
+            >
+              Lighting
+            </button>
+            <button
+              type="button"
+              className={mode === 'religion' && !highlight ? 'active' : ''}
+              onClick={() => {
+                setMode('religion')
+                setHighlight(null)
+              }}
+            >
+              Religion
+            </button>
             {highlight && (
               <button type="button" className="active" onClick={() => setHighlight(null)}>
                 Showing {highlight.label}
@@ -355,15 +325,13 @@ export default function App() {
           {mobile ? (
             <details className="foot-details">
               <summary>About the data</summary>
-              Census 2011 small areas (two languages allowed on the form; this map uses first language).
-              Census 2022 municipalities (one language). Percentages may not add to 100 on the 2011
-              view. {meta.attribution}
+              Municipality language mix is Census 2011; other municipality stats and province
+              religion/language are Census 2022 where published. {meta.attribution}
             </details>
           ) : (
             <>
-              Census 2011 small areas (two languages allowed on the form; this map uses first language).
-              Census 2022 municipalities (one language). Percentages may not add to 100 on the 2011
-              view. {meta.attribution}
+              Municipality language mix is Census 2011; other municipality stats and province
+              religion/language are Census 2022 where published. {meta.attribution}
             </>
           )}
           </p>
