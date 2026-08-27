@@ -6,6 +6,7 @@ const PEEK_HEIGHT_MAX = 320
 const EXPANDED_HEIGHT_RATIO = 0.88
 const EXPANDED_HEIGHT_TOP_GAP = 72
 const SNAP_THRESHOLD = 48
+const DISMISS_HEIGHT_RATIO = 0.55
 
 function sheetHeights() {
   const viewport = window.innerHeight
@@ -18,7 +19,10 @@ function sheetHeights() {
   }
 }
 
-function useMobileSheet(enabled: boolean) {
+function useMobileSheet(enabled: boolean, onDismiss: () => void) {
+  const onDismissRef = useRef(onDismiss)
+  onDismissRef.current = onDismiss
+
   const [snap, setSnap] = useState<'peek' | 'expanded'>('peek')
   const [height, setHeight] = useState(() => sheetHeights().peek)
   const [dragging, setDragging] = useState(false)
@@ -55,8 +59,8 @@ function useMobileSheet(enabled: boolean) {
     if (!enabled || !dragging) return
     const delta = dragRef.current.startY - event.clientY
     if (Math.abs(delta) > 6) dragRef.current.moved = true
-    const { peek, expanded } = sheetHeights()
-    setHeight(Math.max(peek, Math.min(expanded, dragRef.current.startHeight + delta)))
+    const { expanded } = sheetHeights()
+    setHeight(Math.max(0, Math.min(expanded, dragRef.current.startHeight + delta)))
   }
 
   function finishDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -66,11 +70,19 @@ function useMobileSheet(enabled: boolean) {
     }
     const { peek, expanded } = sheetHeights()
     const delta = dragRef.current.startY - event.clientY
+    const releasedHeight = Math.max(0, Math.min(expanded, dragRef.current.startHeight + delta))
+
+    if (releasedHeight < peek * DISMISS_HEIGHT_RATIO) {
+      setDragging(false)
+      onDismissRef.current()
+      return
+    }
+
     let nextSnap = snap
     if (dragRef.current.moved) {
       if (delta > SNAP_THRESHOLD) nextSnap = 'expanded'
       else if (delta < -SNAP_THRESHOLD) nextSnap = 'peek'
-      else nextSnap = height > (peek + expanded) / 2 ? 'expanded' : 'peek'
+      else nextSnap = releasedHeight > (peek + expanded) / 2 ? 'expanded' : 'peek'
     } else {
       nextSnap = snap === 'peek' ? 'expanded' : 'peek'
     }
@@ -172,7 +184,7 @@ export function PlacePanel(props: Props) {
   const where = [place.mn, place.pr].filter(Boolean).join(' · ')
   const maxPct = Math.max(...rows.map((row) => row[2]), 1)
   const bornPct = ((place.fb || 0) / 10).toFixed(1)
-  const { snap, height, dragging, resetSnap, expand, dragHandlers } = useMobileSheet(mobile)
+  const { snap, height, dragging, resetSnap, expand, dragHandlers } = useMobileSheet(mobile, onClose)
 
   useEffect(() => {
     resetSnap()
@@ -189,21 +201,33 @@ export function PlacePanel(props: Props) {
       aria-expanded={mobile ? snap === 'expanded' : undefined}
     >
       {mobile && (
-        <div className="panel-drag-zone" aria-label="Drag to resize panel" {...dragHandlers}>
-          <div className="panel-handle" aria-hidden="true" />
+        <div className="panel-sheet-top" {...dragHandlers}>
+          <div className="panel-drag-zone" aria-label="Drag to resize or dismiss panel">
+            <div className="panel-handle" aria-hidden="true" />
+          </div>
+          <div className="panel-head">
+            <h2>{place.name}</h2>
+            <p className="where">
+              {where}
+              {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
+              {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
+            </p>
+          </div>
         </div>
       )}
       <button className="close" type="button" onClick={onClose} aria-label="Close">
         ×
       </button>
-      <div className="panel-head">
-        <h2>{place.name}</h2>
-        <p className="where">
-          {where}
-          {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
-          {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
-        </p>
-      </div>
+      {!mobile && (
+        <div className="panel-head">
+          <h2>{place.name}</h2>
+          <p className="where">
+            {where}
+            {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
+            {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
+          </p>
+        </div>
+      )}
       {tabs.length > 1 && (
         <div className="panel-tabs">
           {tabs.map((item) => (

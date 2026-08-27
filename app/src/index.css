@@ -323,14 +323,24 @@ input {
 
 .panel-drag-zone {
   flex-shrink: 0;
-  padding: 10px 16px 6px;
+  padding: 10px 16px 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.panel-sheet-top {
+  flex-shrink: 0;
   touch-action: none;
   cursor: grab;
   user-select: none;
 }
 
-.panel-drag-zone:active {
+.panel-sheet-top:active {
   cursor: grabbing;
+}
+
+.panel-sheet-top .panel-head {
+  padding-top: 0;
 }
 
 @keyframes sheet-up {
