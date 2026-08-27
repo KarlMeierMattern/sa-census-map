@@ -152,6 +152,7 @@ export default function App() {
         vintage={vintage}
         mode={mode}
         highlight={highlight}
+        selectedPlace={place}
         onPlace={handlePlace}
         flyTo={flyTo}
       />

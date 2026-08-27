@@ -9,7 +9,7 @@ import {
 import { Protocol } from 'pmtiles'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { ExpressionSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
+import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
 import type { Language, PlaceInfo, Vintage } from './types'
 
 setWorkerUrl(
@@ -72,24 +72,45 @@ function mosaicPaint(zoomOut: string, zoomIn: string): ExpressionSpecification {
   ]
 }
 
+function placeFilter(place: { name: string; mn?: string }): FilterSpecification {
+  const filters: ExpressionSpecification[] = [['==', ['get', 'name'], place.name]]
+  if (place.mn) filters.push(['==', ['get', 'mn'], place.mn])
+  return ['all', ...filters] as FilterSpecification
+}
+
+const EMPTY_FILTER: FilterSpecification = ['==', ['get', 'name'], '']
+
+function placeLabel(name: string, mn?: string, pr?: string) {
+  return [name, mn, pr].filter(Boolean).join(', ')
+}
+
+function isPointerDevice() {
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+}
+
 type Props = {
   vintage: Vintage
   mode: 'language' | 'group' | 'born'
   highlight: Language | null
+  selectedPlace: PlaceInfo | null
   onPlace: (place: PlaceInfo | null) => void
   flyTo: { lng: number; lat: number } | null
 }
 
-export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
+export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, flyTo }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const onPlaceRef = useRef(onPlace)
   const modeRef = useRef(mode)
   const highlightRef = useRef(highlight)
+  const selectedPlaceRef = useRef(selectedPlace)
   const [fail, setFail] = useState('')
+  const [hoverTip, setHoverTip] = useState<{ label: string; x: number; y: number } | null>(null)
   onPlaceRef.current = onPlace
   modeRef.current = mode
   highlightRef.current = highlight
+  selectedPlaceRef.current = selectedPlace
+  const interactiveVintage = vintage.id === 'muni-2022'
 
   function applyPaint(map: Map) {
     if (!map.getLayer('mosaic-fill')) return
@@ -191,11 +212,72 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
           'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.1, 12, 0.6],
         },
       })
+      if (interactiveVintage) {
+        map.addLayer({
+          id: 'mosaic-selected-line',
+          type: 'line',
+          source: 'mosaic',
+          'source-layer': vintage.layer,
+          filter: EMPTY_FILTER,
+          paint: {
+            'line-color': '#f8f6f0',
+            'line-opacity': 0.92,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 3, 12, 4],
+          },
+        })
+        map.addLayer({
+          id: 'mosaic-hover-line',
+          type: 'line',
+          source: 'mosaic',
+          'source-layer': vintage.layer,
+          filter: EMPTY_FILTER,
+          paint: {
+            'line-color': '#f8f6f0',
+            'line-opacity': 0.72,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 10, 2.6, 12, 3.6],
+          },
+        })
+      }
       applyPaint(map)
     })
 
+    const clearHover = () => {
+      if (!map.getLayer('mosaic-hover-line')) return
+      map.setFilter('mosaic-hover-line', EMPTY_FILTER)
+      setHoverTip(null)
+    }
+
+    const onMove = (event: MapMouseEvent) => {
+      if (!map.getLayer('mosaic-hover-line')) return
+      const feature = map.queryRenderedFeatures(event.point, { layers: ['mosaic-fill'] })[0]
+      if (!feature?.properties) {
+        clearHover()
+        return
+      }
+      const name = String(feature.properties.name || 'This place')
+      const mn = feature.properties.mn ? String(feature.properties.mn) : undefined
+      const pr = feature.properties.pr ? String(feature.properties.pr) : undefined
+      const hoverPlace = { name, mn }
+      const selected = selectedPlaceRef.current
+      const isSelected =
+        selected && selected.name === name && (selected.mn || '') === (mn || '')
+      if (isSelected) {
+        clearHover()
+        return
+      }
+      map.setFilter('mosaic-hover-line', placeFilter(hoverPlace))
+      if (isPointerDevice()) {
+        setHoverTip({ label: placeLabel(name, mn, pr), x: event.point.x, y: event.point.y })
+      }
+    }
+
+    const onLeave = () => {
+      clearHover()
+    }
+
     map.on('click', 'mosaic-fill', (event: MapLayerMouseEvent) => {
       event.originalEvent?.stopPropagation()
+      clearHover()
       const feature = event.features?.[0]
       if (!feature?.properties) {
         onPlaceRef.current(null)
@@ -222,6 +304,10 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
     map.on('mouseleave', 'mosaic-fill', () => {
       map.getCanvas().style.cursor = ''
     })
+    if (interactiveVintage) {
+      map.on('mousemove', onMove)
+      container.addEventListener('mouseleave', onLeave)
+    }
 
     const onResize = () => map.resize()
     const observer = new ResizeObserver(onResize)
@@ -231,6 +317,10 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', onResize)
+      if (interactiveVintage) {
+        map.off('mousemove', onMove)
+        container.removeEventListener('mouseleave', onLeave)
+      }
       try {
         map.remove()
       } catch {
@@ -239,6 +329,16 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
       mapRef.current = null
     }
   }, [vintage])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || vintage.id !== 'muni-2022' || !map.getLayer('mosaic-selected-line')) return
+    if (selectedPlace) {
+      map.setFilter('mosaic-selected-line', placeFilter(selectedPlace))
+    } else {
+      map.setFilter('mosaic-selected-line', EMPTY_FILTER)
+    }
+  }, [selectedPlace, vintage.id])
 
   useEffect(() => {
     const map = mapRef.current
@@ -253,6 +353,11 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
   return (
     <>
       <div className="map" ref={rootRef} />
+      {hoverTip && (
+        <div className="map-tip" style={{ left: hoverTip.x, top: hoverTip.y }}>
+          {hoverTip.label}
+        </div>
+      )}
       {fail && <p className="map-fail">{fail}</p>}
     </>
   )
