@@ -48,6 +48,10 @@ async function searchPlaces(query: string): Promise<Suggest[]> {
   return places
 }
 
+function isSamePlace(a: PlaceInfo, b: PlaceInfo) {
+  return a.name === b.name && a.mn === b.mn && a.pr === b.pr
+}
+
 export default function App() {
   const mobile = useMobile()
   const [chromeOpen, setChromeOpen] = useState(() => window.innerWidth >= 721)
@@ -108,6 +112,13 @@ export default function App() {
     return () => window.clearTimeout(handle)
   }, [query, languageSuggestions])
 
+  function handlePlace(next: PlaceInfo | null) {
+    setPlace((current) => {
+      if (next && current && isSamePlace(current, next)) return null
+      return next
+    })
+  }
+
   function choose(item: Suggest) {
     setQuery(item.label)
     setSuggests([])
@@ -124,6 +135,7 @@ export default function App() {
     if (item.lng != null && item.lat != null) {
       setHighlight(null)
       setFlyTo({ lng: item.lng, lat: item.lat })
+      if (mobile) setChromeOpen(false)
     }
   }
 
@@ -140,7 +152,7 @@ export default function App() {
         vintage={vintage}
         mode={mode}
         highlight={highlight}
-        onPlace={setPlace}
+        onPlace={handlePlace}
         flyTo={flyTo}
       />
       <div className="chrome">
