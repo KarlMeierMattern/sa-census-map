@@ -41,6 +41,31 @@ function provinceTilesUrl(path: string) {
   return `pmtiles://${base.replace(/\/$/, '')}${path}`
 }
 
+const SA_BOUNDS: [[number, number], [number, number]] = [[15.8, -35.8], [33.5, -21.5]]
+const DESKTOP_CENTER: [number, number] = [24.7, -28.5]
+const DESKTOP_ZOOM = 5.05
+const DESKTOP_MIN_ZOOM = 5
+const MOBILE_MIN_ZOOM = 3.2
+
+function mobileMapPadding() {
+  const safeTop = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--safe-top'),
+  ) || 0
+  const safeBottom = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom'),
+  ) || 0
+  return { top: 76 + safeTop, bottom: 32 + safeBottom, left: 16, right: 16 }
+}
+
+function fitSouthAfricaOverview(map: Map, animated = false) {
+  map.resize()
+  map.fitBounds(SA_BOUNDS, {
+    padding: mobileMapPadding(),
+    duration: animated ? 1000 : 0,
+    essential: true,
+  })
+}
+
 function parseMix(raw: unknown): PlaceInfo['mix'] {
   if (typeof raw !== 'string') return []
   try {
@@ -136,6 +161,7 @@ type Props = {
   selectedPlace: PlaceInfo | null
   onPlace: (place: PlaceInfo | null) => void
   flyTo: { lng: number; lat: number } | null
+  mobile?: boolean
   onZoomChange?: (zoom: number) => void
   zoomToMunicipalitiesTick?: number
   zoomToProvincesTick?: number
@@ -148,6 +174,7 @@ export function MapCanvas({
   selectedPlace,
   onPlace,
   flyTo,
+  mobile = false,
   onZoomChange,
   zoomToMunicipalitiesTick,
   zoomToProvincesTick,
@@ -256,9 +283,9 @@ export function MapCanvas({
             },
           ],
         },
-        center: [24.7, -28.5],
-        zoom: 5.05,
-        minZoom: 5,
+        center: DESKTOP_CENTER,
+        zoom: DESKTOP_ZOOM,
+        minZoom: mobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM,
         maxZoom: 13,
         attributionControl: false,
       })
@@ -378,7 +405,14 @@ export function MapCanvas({
       }
       applyPaint(map, 'province-fill')
       applyPaint(map, 'mosaic-fill')
-      reportZoom()
+      if (mobile) {
+        map.once('idle', () => {
+          fitSouthAfricaOverview(map)
+          reportZoom()
+        })
+      } else {
+        reportZoom()
+      }
     })
 
     const clearHover = () => {
@@ -483,6 +517,18 @@ export function MapCanvas({
 
   useEffect(() => {
     const map = mapRef.current
+    if (!map) return
+    map.setMinZoom(mobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM)
+    if (!mobile) return
+    if (!map.isStyleLoaded()) {
+      map.once('load', () => fitSouthAfricaOverview(map))
+      return
+    }
+    fitSouthAfricaOverview(map)
+  }, [mobile])
+
+  useEffect(() => {
+    const map = mapRef.current
     if (!map || vintage.id !== 'muni-2022') return
     const suffix = selectedPlace?.kind === 'province' ? 'province' : 'muni'
     const layerId = `mosaic-selected-line-${suffix}`
@@ -513,8 +559,12 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !zoomToProvincesTick) return
+    if (mobile) {
+      fitSouthAfricaOverview(map, true)
+      return
+    }
     map.flyTo({ zoom: 5.2, essential: true })
-  }, [zoomToProvincesTick])
+  }, [zoomToProvincesTick, mobile])
 
   useEffect(() => {
     if (!flyTo || !mapRef.current) return

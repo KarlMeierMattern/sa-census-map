@@ -186,6 +186,7 @@ export default function App() {
         selectedPlace={place}
         onPlace={handlePlace}
         flyTo={flyTo}
+        mobile={mobile}
         onZoomChange={setMapZoom}
         zoomToMunicipalitiesTick={zoomToMunicipalitiesTick}
         zoomToProvincesTick={zoomToProvincesTick}
