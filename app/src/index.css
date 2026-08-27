@@ -376,32 +376,18 @@ input {
   -webkit-overflow-scrolling: touch;
 }
 
-.panel-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 16px 8px;
-}
-
-.panel-tabs button {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.panel-tabs button.active {
-  background: rgba(226, 179, 58, 0.24);
-  border-color: rgba(139, 106, 20, 0.5);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.panel-born {
+.panel-born,
+.panel-unavailable {
   margin: 0;
+}
+
+.panel-mode {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
 }
 
 .panel-more {

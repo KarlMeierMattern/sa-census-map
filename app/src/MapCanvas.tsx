@@ -103,13 +103,19 @@ const EXTENDED_MODES: Record<string, { out: string; inn: string; prefix: string 
   religion: { out: 'religionc0', inn: 'religionc1', prefix: 'religion' },
 }
 
+function sanePop(raw: unknown): number {
+  const n = Number(raw || 0)
+  if (!Number.isFinite(n) || n < 1_000 || n > 50_000_000) return 0
+  return Math.round(n)
+}
+
 function propsToPlace(p: Record<string, unknown> | null | undefined): PlaceInfo {
   const kind = p?.kind === 'province' ? 'province' : 'municipality'
   return {
     name: String(p?.name || 'This place'),
     mn: p?.mn ? String(p.mn) : undefined,
     pr: p?.pr ? String(p.pr) : undefined,
-    pop: Number(p?.pop || 0),
+    pop: sanePop(p?.pop),
     area: p?.area ? Number(p.area) : undefined,
     kind,
     mix: parseMix(p?.mix),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Language, MapMode, PlaceInfo } from './types'
+import type { Language, MapMode, MixRow, PlaceInfo } from './types'
+import { isMuniOnlyMode, MODE_LABELS } from './types'
 
 const PEEK_HEIGHT_RATIO = 0.38
 const PEEK_HEIGHT_MAX = 320
@@ -117,12 +118,6 @@ function lookup(id: string, catalog: Language[]) {
   return catalog.find((item) => item.id === id)
 }
 
-type StatTab = {
-  id: string
-  label: string
-  rows?: PlaceInfo['mix']
-}
-
 type Props = {
   place: PlaceInfo
   mode: MapMode
@@ -137,25 +132,27 @@ type Props = {
   onClose: () => void
 }
 
-function statTabs(place: PlaceInfo): StatTab[] {
-  const tabs: StatTab[] = []
-  if (place.kind === 'province') {
-    tabs.push({ id: 'language', label: 'Language', rows: place.mix })
-    tabs.push({ id: 'group', label: 'Population group', rows: place.rmix })
-    if (place.religion?.length) tabs.push({ id: 'religion', label: 'Religion', rows: place.religion })
-    return tabs
+function rowsForMode(place: PlaceInfo, mode: MapMode): MixRow[] {
+  switch (mode) {
+    case 'group':
+      return place.rmix
+    case 'religion':
+      return place.religion || []
+    case 'marital':
+      return place.marital || []
+    case 'education':
+      return place.education || []
+    case 'tenure':
+      return place.tenure || []
+    case 'lighting':
+      return place.lighting || []
+    default:
+      return place.mix
   }
-  tabs.push({ id: 'language', label: 'Language', rows: place.mix })
-  tabs.push({ id: 'group', label: 'Population group', rows: place.rmix })
-  if (place.marital?.length) tabs.push({ id: 'marital', label: 'Marital status', rows: place.marital })
-  if (place.education?.length) tabs.push({ id: 'education', label: 'Education', rows: place.education })
-  if (place.tenure?.length) tabs.push({ id: 'tenure', label: 'Property', rows: place.tenure })
-  if (place.lighting?.length) tabs.push({ id: 'lighting', label: 'Lighting', rows: place.lighting })
-  return tabs
 }
 
-function catalogFor(tab: string, props: Props): Language[] {
-  switch (tab) {
+function catalogForMode(mode: MapMode, props: Props): Language[] {
+  switch (mode) {
     case 'group':
       return props.groups
     case 'marital':
@@ -173,26 +170,54 @@ function catalogFor(tab: string, props: Props): Language[] {
   }
 }
 
+function unavailableMessage(place: PlaceInfo, mode: MapMode): string | null {
+  if (mode === 'born') {
+    if (place.kind === 'province') {
+      return 'Foreign-born share is only available for municipalities. Zoom in and tap a municipality.'
+    }
+    return null
+  }
+  if (mode === 'religion' && place.kind !== 'province') {
+    return 'Religion is shown at province level. Zoom out to see it on the map.'
+  }
+  if (isMuniOnlyMode(mode) && place.kind === 'province') {
+    return `${MODE_LABELS[mode]} is only available for municipalities. Zoom in and tap a municipality.`
+  }
+  if (!rowsForMode(place, mode).length) {
+    return `No ${MODE_LABELS[mode].toLowerCase()} data is available for this place.`
+  }
+  return null
+}
+
 export function PlacePanel(props: Props) {
   const { place, mode, mobile, onClose } = props
-  const tabs = statTabs(place)
-  const defaultTab = tabs.find((tab) => tab.id === mode)?.id || tabs[0]?.id || 'language'
-  const [activeTab, setActiveTab] = useState(defaultTab)
-  const tab = tabs.find((item) => item.id === activeTab) || tabs[0]
-  const catalog = catalogFor(tab?.id || 'language', props)
-  const rows = tab?.rows || []
   const where = [place.mn, place.pr].filter(Boolean).join(' · ')
-  const maxPct = Math.max(...rows.map((row) => row[2]), 1)
   const bornPct = ((place.fb || 0) / 10).toFixed(1)
+  const unavailable = unavailableMessage(place, mode)
+  const rows = unavailable || mode === 'born' ? [] : rowsForMode(place, mode)
+  const catalog = catalogForMode(mode, props)
+  const maxPct = Math.max(...rows.map((row) => row[2]), 1)
   const { snap, height, dragging, resetSnap, expand, dragHandlers } = useMobileSheet(mobile, onClose)
 
   useEffect(() => {
     resetSnap()
-  }, [place.name, place.mn, place.pr, place.kind, resetSnap])
+  }, [place.name, place.mn, place.pr, place.kind, mode, resetSnap])
 
   const showAllRows = !mobile || snap === 'expanded'
   const visibleRows = showAllRows ? rows : rows.slice(0, 5)
   const hiddenCount = rows.length - visibleRows.length
+
+  const head = (
+    <>
+      <h2>{place.name}</h2>
+      <p className="where">
+        {where}
+        {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
+        {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
+      </p>
+      <p className="panel-mode">{MODE_LABELS[mode]}</p>
+    </>
+  )
 
   return (
     <aside
@@ -205,48 +230,17 @@ export function PlacePanel(props: Props) {
           <div className="panel-drag-zone" aria-label="Drag to resize or dismiss panel">
             <div className="panel-handle" aria-hidden="true" />
           </div>
-          <div className="panel-head">
-            <h2>{place.name}</h2>
-            <p className="where">
-              {where}
-              {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
-              {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
-            </p>
-          </div>
+          <div className="panel-head">{head}</div>
         </div>
       )}
       <button className="close" type="button" onClick={onClose} aria-label="Close">
         ×
       </button>
-      {!mobile && (
-        <div className="panel-head">
-          <h2>{place.name}</h2>
-          <p className="where">
-            {where}
-            {place.pop ? ` · ${place.pop.toLocaleString()} people` : ''}
-            {place.area ? ` · ${place.area.toLocaleString()} km²` : ''}
-          </p>
-        </div>
-      )}
-      {tabs.length > 1 && (
-        <div className="panel-tabs">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={item.id === activeTab ? 'active' : ''}
-              onClick={() => {
-                setActiveTab(item.id)
-                resetSnap()
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {!mobile && <div className="panel-head">{head}</div>}
       <div className="panel-body">
-        {mode === 'born' && place.kind !== 'province' ? (
+        {unavailable ? (
+          <p className="dek panel-unavailable">{unavailable}</p>
+        ) : mode === 'born' ? (
           <p className="dek panel-born">About {bornPct}% of people here were born outside South Africa.</p>
         ) : (
           <>
