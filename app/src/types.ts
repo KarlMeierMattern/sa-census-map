@@ -43,6 +43,26 @@ export type MapMode =
   | 'lighting'
   | 'religion'
 
+export const MODE_LABELS: Record<MapMode, string> = {
+  language: 'Language mix',
+  group: 'Population group',
+  born: 'Foreign-born',
+  marital: 'Marital status',
+  education: 'Education',
+  tenure: 'Property',
+  lighting: 'Lighting',
+  religion: 'Religion',
+}
+
+/** Municipality tiles appear from this zoom; province layer hides above it. */
+export const MUNI_ZOOM = 6.5
+
+export const MUNI_ONLY_MODES: MapMode[] = ['born', 'marital', 'education', 'tenure', 'lighting']
+
+export function isMuniOnlyMode(mode: MapMode) {
+  return MUNI_ONLY_MODES.includes(mode)
+}
+
 export type PlaceInfo = {
   name: string
   mn?: string

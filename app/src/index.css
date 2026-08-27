@@ -214,6 +214,67 @@ input {
   margin-top: 12px;
 }
 
+.control-group {
+  margin-top: 12px;
+}
+
+.control-group:first-of-type {
+  margin-top: 0;
+}
+
+.control-label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.controls-highlight {
+  margin-top: 8px;
+}
+
+.zoom-hint {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #d8d0c0;
+  background: #f3efe4;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.zoom-hint button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.map-zoom-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 2;
+  transform: translateX(-50%);
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(248, 246, 240, 0.94);
+  border: 1px solid rgba(17, 17, 16, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  pointer-events: none;
+  text-align: center;
+}
+
 .controls button {
   border: 1px solid #cfc9bc;
   background: #fff;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MapCanvas } from './MapCanvas'
 import { PlacePanel } from './PlacePanel'
 import type { Language, MapMode, Meta, PlaceInfo, Suggest, Vintage } from './types'
+import { isMuniOnlyMode, MODE_LABELS, MUNI_ZOOM } from './types'
 
 function useMobile() {
   const [mobile, setMobile] = useState(() => window.innerWidth < 721)
@@ -63,6 +64,8 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [suggests, setSuggests] = useState<Suggest[]>([])
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null)
+  const [mapZoom, setMapZoom] = useState(5.05)
+  const [zoomToMunicipalitiesTick, setZoomToMunicipalitiesTick] = useState(0)
 
   useEffect(() => {
     fetch('/meta.json')
@@ -130,6 +133,14 @@ export default function App() {
     })
   }
 
+  function selectMode(next: MapMode) {
+    setMode(next)
+    setHighlight(null)
+    if (isMuniOnlyMode(next) && mapZoom < MUNI_ZOOM) {
+      setZoomToMunicipalitiesTick((tick) => tick + 1)
+    }
+  }
+
   function choose(item: Suggest) {
     setQuery(item.label)
     setSuggests([])
@@ -166,6 +177,8 @@ export default function App() {
         selectedPlace={place}
         onPlace={handlePlace}
         flyTo={flyTo}
+        onZoomChange={setMapZoom}
+        zoomToMunicipalitiesTick={zoomToMunicipalitiesTick}
       />
       <div className="chrome">
         {mobile && !chromeOpen ? (
@@ -213,87 +226,81 @@ export default function App() {
               </ul>
             )}
           </div>
-          <div className="controls">
-            <button
-              type="button"
-              className={mode === 'language' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('language')
-                setHighlight(null)
-              }}
-            >
-              Language mix
-            </button>
-            <button
-              type="button"
-              className={mode === 'group' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('group')
-                setHighlight(null)
-              }}
-            >
-              Population group
-            </button>
-            <button
-              type="button"
-              className={mode === 'born' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('born')
-                setHighlight(null)
-              }}
-            >
-              Foreign-born
-            </button>
-            <button
-              type="button"
-              className={mode === 'marital' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('marital')
-                setHighlight(null)
-              }}
-            >
-              Marital status
-            </button>
-            <button
-              type="button"
-              className={mode === 'education' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('education')
-                setHighlight(null)
-              }}
-            >
-              Education
-            </button>
-            <button
-              type="button"
-              className={mode === 'tenure' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('tenure')
-                setHighlight(null)
-              }}
-            >
-              Property
-            </button>
-            <button
-              type="button"
-              className={mode === 'lighting' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('lighting')
-                setHighlight(null)
-              }}
-            >
-              Lighting
-            </button>
-            <button
-              type="button"
-              className={mode === 'religion' && !highlight ? 'active' : ''}
-              onClick={() => {
-                setMode('religion')
-                setHighlight(null)
-              }}
-            >
-              Religion
-            </button>
+          <div className="control-group">
+            <p className="control-label">Provinces and municipalities</p>
+            <div className="controls">
+              <button
+                type="button"
+                className={mode === 'language' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('language')}
+              >
+                Language mix
+              </button>
+              <button
+                type="button"
+                className={mode === 'group' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('group')}
+              >
+                Population group
+              </button>
+              <button
+                type="button"
+                className={mode === 'religion' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('religion')}
+              >
+                Religion
+              </button>
+            </div>
+          </div>
+          <div className="control-group">
+            <p className="control-label">Municipalities only — zoom in to view</p>
+            <div className="controls">
+              <button
+                type="button"
+                className={mode === 'born' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('born')}
+              >
+                Foreign-born
+              </button>
+              <button
+                type="button"
+                className={mode === 'marital' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('marital')}
+              >
+                Marital status
+              </button>
+              <button
+                type="button"
+                className={mode === 'education' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('education')}
+              >
+                Education
+              </button>
+              <button
+                type="button"
+                className={mode === 'tenure' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('tenure')}
+              >
+                Property
+              </button>
+              <button
+                type="button"
+                className={mode === 'lighting' && !highlight ? 'active' : ''}
+                onClick={() => selectMode('lighting')}
+              >
+                Lighting
+              </button>
+            </div>
+          </div>
+          {isMuniOnlyMode(mode) && mapZoom < MUNI_ZOOM && (
+            <p className="zoom-hint">
+              {MODE_LABELS[mode]} is only available at municipality level.{' '}
+              <button type="button" onClick={() => setZoomToMunicipalitiesTick((tick) => tick + 1)}>
+                Zoom in
+              </button>
+            </p>
+          )}
+          <div className="controls controls-highlight">
             {highlight && (
               <button type="button" className="active" onClick={() => setHighlight(null)}>
                 Showing {highlight.label}

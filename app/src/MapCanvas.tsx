@@ -11,6 +11,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
 import type { Language, MapMode, PlaceInfo, Vintage } from './types'
+import { isMuniOnlyMode, MUNI_ZOOM } from './types'
 
 setWorkerUrl(
   import.meta.env.DEV
@@ -122,28 +123,55 @@ type Props = {
   selectedPlace: PlaceInfo | null
   onPlace: (place: PlaceInfo | null) => void
   flyTo: { lng: number; lat: number } | null
+  onZoomChange?: (zoom: number) => void
+  zoomToMunicipalitiesTick?: number
 }
 
-export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, flyTo }: Props) {
+export function MapCanvas({
+  vintage,
+  mode,
+  highlight,
+  selectedPlace,
+  onPlace,
+  flyTo,
+  onZoomChange,
+  zoomToMunicipalitiesTick,
+}: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const onPlaceRef = useRef(onPlace)
+  const onZoomChangeRef = useRef(onZoomChange)
   const modeRef = useRef(mode)
   const highlightRef = useRef(highlight)
   const selectedPlaceRef = useRef(selectedPlace)
   const [fail, setFail] = useState('')
   const [hoverTip, setHoverTip] = useState<{ label: string; x: number; y: number } | null>(null)
+  const [zoom, setZoom] = useState(5.05)
   onPlaceRef.current = onPlace
+  onZoomChangeRef.current = onZoomChange
   modeRef.current = mode
   highlightRef.current = highlight
   selectedPlaceRef.current = selectedPlace
   const interactiveVintage = vintage.id === 'muni-2022'
   const hasProvinces = Boolean(vintage.provinceTiles)
+  const muniModeActive = isMuniOnlyMode(mode)
+  const showMuniZoomHint = hasProvinces && muniModeActive && zoom < MUNI_ZOOM
 
   function applyPaint(map: Map, layerId = 'mosaic-fill') {
     if (!map.getLayer(layerId)) return
     const current = highlightRef.current
     const currentMode = modeRef.current
+    const isProvinceLayer = layerId === 'province-fill'
+
+    if (isProvinceLayer && isMuniOnlyMode(currentMode)) {
+      map.setPaintProperty(layerId, 'fill-color', '#3a3834')
+      map.setPaintProperty(layerId, 'fill-opacity', 0.55)
+      return
+    }
+    if (isProvinceLayer) {
+      map.setPaintProperty(layerId, 'fill-opacity', 0.94)
+    }
+
     const extended = EXTENDED_MODES[currentMode]
     if (current) {
       if (extended) {
@@ -222,6 +250,13 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
     map.on('error', (event) => {
       console.error(event.error)
     })
+    const reportZoom = () => {
+      const next = map.getZoom()
+      setZoom(next)
+      onZoomChangeRef.current?.(next)
+    }
+    map.on('zoom', reportZoom)
+    map.on('zoomend', reportZoom)
     map.on('load', () => {
       map.resize()
       if (hasProvinces && vintage.provinceTiles && vintage.provinceLayer) {
@@ -318,6 +353,7 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
       }
       applyPaint(map, 'province-fill')
       applyPaint(map, 'mosaic-fill')
+      reportZoom()
     })
 
     const clearHover = () => {
@@ -441,7 +477,13 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
     if (!map) return
     applyPaint(map, 'province-fill')
     applyPaint(map, 'mosaic-fill')
-  }, [mode, highlight])
+  }, [mode, highlight, zoom])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !zoomToMunicipalitiesTick) return
+    map.flyTo({ zoom: 7.2, essential: true })
+  }, [zoomToMunicipalitiesTick])
 
   useEffect(() => {
     if (!flyTo || !mapRef.current) return
@@ -451,6 +493,11 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
   return (
     <>
       <div className="map" ref={rootRef} />
+      {showMuniZoomHint && (
+        <div className="map-zoom-banner" aria-live="polite">
+          Zoom in to see this by municipality
+        </div>
+      )}
       {hoverTip && (
         <div className="map-tip" style={{ left: hoverTip.x, top: hoverTip.y }}>
           {hoverTip.label}
