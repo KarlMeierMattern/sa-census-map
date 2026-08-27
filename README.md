@@ -66,4 +66,4 @@ The map credits Stats SA as the source and states that the processing is indepen
 - Pan and zoom. Zoomed out, rarer languages are boosted so the national view is not only isiZulu, isiXhosa, and Afrikaans.
 - Tap a place for the language mix (or population group).
 - Search a suburb, city, or language.
-- Toggle 2011 small areas, 2011 municipalities, and 2022 municipalities. Foreign-born is a 2022 municipality layer.
+- Filter by language mix, population group, foreign-born, marital status, education, tenure, lighting, or religion. Zoomed out shows provinces; zoom in for municipalities.

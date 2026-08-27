@@ -252,24 +252,7 @@ def write_meta() -> None:
         "title": "A South African Mosaic",
         "languages": LANGUAGES,
         "populationGroups": POP_GROUPS,
-        "vintages": [
-            {
-                "id": "sal-2011",
-                "label": "2011 small areas",
-                "tiles": "/tiles/sal-2011.pmtiles",
-                "layer": "sal",
-                "source": "Census 2011 small areas. First language spoken in the household.",
-                "hasForeignBorn": False,
-            },
-            {
-                "id": "muni-2011",
-                "label": "2011 municipalities",
-                "tiles": "/tiles/muni-2011.pmtiles",
-                "layer": "muni",
-                "source": "Census 2011 local and metropolitan municipalities.",
-                "hasForeignBorn": False,
-            },
-        ],
+        "vintages": [],
         "attribution": (
             "Census data: Statistics South Africa (Census 2011 and Census 2022). "
             "Boundaries: Statistics South Africa / Municipal Demarcation Board. "

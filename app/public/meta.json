@@ -351,22 +351,6 @@
   ],
   "vintages": [
     {
-      "id": "sal-2011",
-      "label": "2011 small areas",
-      "tiles": "/tiles/sal-2011.pmtiles",
-      "layer": "sal",
-      "source": "Census 2011 small areas. First language spoken in the household.",
-      "hasForeignBorn": false
-    },
-    {
-      "id": "muni-2011",
-      "label": "2011 municipalities",
-      "tiles": "/tiles/muni-2011.pmtiles",
-      "layer": "muni",
-      "source": "Census 2011 local and metropolitan municipalities.",
-      "hasForeignBorn": false
-    },
-    {
       "id": "muni-2022",
       "label": "2022 municipalities",
       "tiles": "/tiles/muni-2022.pmtiles",
