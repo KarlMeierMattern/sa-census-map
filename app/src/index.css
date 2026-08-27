@@ -310,11 +310,27 @@ input {
   bottom: calc(12px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  max-height: min(38vh, 320px);
   overflow: hidden;
   padding: 0;
   border-radius: var(--sheet-radius);
   animation: sheet-up 0.24s ease-out;
+  transition: height 0.22s ease-out;
+}
+
+.panel.mobile.is-dragging {
+  transition: none;
+}
+
+.panel-drag-zone {
+  flex-shrink: 0;
+  padding: 10px 16px 6px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.panel-drag-zone:active {
+  cursor: grabbing;
 }
 
 @keyframes sheet-up {
@@ -331,7 +347,7 @@ input {
 .panel-handle {
   width: 36px;
   height: 4px;
-  margin: 8px auto 0;
+  margin: 0 auto;
   border-radius: 999px;
   background: rgba(17, 17, 16, 0.16);
   flex-shrink: 0;

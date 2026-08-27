@@ -1,5 +1,105 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Language, MapMode, PlaceInfo } from './types'
+
+const PEEK_HEIGHT_RATIO = 0.38
+const PEEK_HEIGHT_MAX = 320
+const EXPANDED_HEIGHT_RATIO = 0.88
+const EXPANDED_HEIGHT_TOP_GAP = 72
+const SNAP_THRESHOLD = 48
+
+function sheetHeights() {
+  const viewport = window.innerHeight
+  const safeTop = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--safe-top'),
+  ) || 0
+  return {
+    peek: Math.min(viewport * PEEK_HEIGHT_RATIO, PEEK_HEIGHT_MAX),
+    expanded: Math.min(viewport * EXPANDED_HEIGHT_RATIO, viewport - EXPANDED_HEIGHT_TOP_GAP - safeTop),
+  }
+}
+
+function useMobileSheet(enabled: boolean) {
+  const [snap, setSnap] = useState<'peek' | 'expanded'>('peek')
+  const [height, setHeight] = useState(() => sheetHeights().peek)
+  const [dragging, setDragging] = useState(false)
+  const dragRef = useRef({ startY: 0, startHeight: sheetHeights().peek, moved: false })
+
+  const resetSnap = useCallback(() => {
+    const { peek } = sheetHeights()
+    setSnap('peek')
+    setHeight(peek)
+    setDragging(false)
+  }, [])
+
+  useEffect(() => {
+    if (!enabled) return
+    const onResize = () => {
+      const heights = sheetHeights()
+      setHeight(snap === 'expanded' ? heights.expanded : heights.peek)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [enabled, snap])
+
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (!enabled) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const heights = sheetHeights()
+    const startHeight = snap === 'expanded' ? heights.expanded : heights.peek
+    dragRef.current = { startY: event.clientY, startHeight, moved: false }
+    setDragging(true)
+    setHeight(startHeight)
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!enabled || !dragging) return
+    const delta = dragRef.current.startY - event.clientY
+    if (Math.abs(delta) > 6) dragRef.current.moved = true
+    const { peek, expanded } = sheetHeights()
+    setHeight(Math.max(peek, Math.min(expanded, dragRef.current.startHeight + delta)))
+  }
+
+  function finishDrag(event: React.PointerEvent<HTMLDivElement>) {
+    if (!enabled || !dragging) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    const { peek, expanded } = sheetHeights()
+    const delta = dragRef.current.startY - event.clientY
+    let nextSnap = snap
+    if (dragRef.current.moved) {
+      if (delta > SNAP_THRESHOLD) nextSnap = 'expanded'
+      else if (delta < -SNAP_THRESHOLD) nextSnap = 'peek'
+      else nextSnap = height > (peek + expanded) / 2 ? 'expanded' : 'peek'
+    } else {
+      nextSnap = snap === 'peek' ? 'expanded' : 'peek'
+    }
+    setSnap(nextSnap)
+    setHeight(nextSnap === 'expanded' ? expanded : peek)
+    setDragging(false)
+  }
+
+  function expand() {
+    const { expanded } = sheetHeights()
+    setSnap('expanded')
+    setHeight(expanded)
+  }
+
+  return {
+    snap,
+    height,
+    dragging,
+    resetSnap,
+    expand,
+    dragHandlers: {
+      onPointerDown,
+      onPointerMove,
+      onPointerMoveCapture: onPointerMove,
+      onPointerUp: finishDrag,
+      onPointerCancel: finishDrag,
+    },
+  }
+}
 
 function lookup(id: string, catalog: Language[]) {
   return catalog.find((item) => item.id === id)
@@ -72,13 +172,27 @@ export function PlacePanel(props: Props) {
   const where = [place.mn, place.pr].filter(Boolean).join(' · ')
   const maxPct = Math.max(...rows.map((row) => row[2]), 1)
   const bornPct = ((place.fb || 0) / 10).toFixed(1)
-  const [expanded, setExpanded] = useState(false)
-  const visibleRows = mobile && !expanded ? rows.slice(0, 5) : rows
+  const { snap, height, dragging, resetSnap, expand, dragHandlers } = useMobileSheet(mobile)
+
+  useEffect(() => {
+    resetSnap()
+  }, [place.name, place.mn, place.pr, place.kind, resetSnap])
+
+  const showAllRows = !mobile || snap === 'expanded'
+  const visibleRows = showAllRows ? rows : rows.slice(0, 5)
   const hiddenCount = rows.length - visibleRows.length
 
   return (
-    <aside className={`panel ${mobile ? 'mobile' : 'desk'}`}>
-      {mobile && <div className="panel-handle" aria-hidden="true" />}
+    <aside
+      className={`panel ${mobile ? 'mobile' : 'desk'}${mobile && dragging ? ' is-dragging' : ''}`}
+      style={mobile ? { height: `${height}px` } : undefined}
+      aria-expanded={mobile ? snap === 'expanded' : undefined}
+    >
+      {mobile && (
+        <div className="panel-drag-zone" aria-label="Drag to resize panel" {...dragHandlers}>
+          <div className="panel-handle" aria-hidden="true" />
+        </div>
+      )}
       <button className="close" type="button" onClick={onClose} aria-label="Close">
         ×
       </button>
@@ -99,7 +213,7 @@ export function PlacePanel(props: Props) {
               className={item.id === activeTab ? 'active' : ''}
               onClick={() => {
                 setActiveTab(item.id)
-                setExpanded(false)
+                resetSnap()
               }}
             >
               {item.label}
@@ -131,8 +245,8 @@ export function PlacePanel(props: Props) {
                 )
               })}
             </div>
-            {mobile && hiddenCount > 0 && (
-              <button type="button" className="panel-more" onClick={() => setExpanded(true)}>
+            {mobile && hiddenCount > 0 && snap === 'peek' && (
+              <button type="button" className="panel-more" onClick={() => expand()}>
                 Show {hiddenCount} more
               </button>
             )}
