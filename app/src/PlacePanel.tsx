@@ -37,7 +37,7 @@ function statTabs(place: PlaceInfo): StatTab[] {
   tabs.push({ id: 'group', label: 'Population group', rows: place.rmix })
   if (place.marital?.length) tabs.push({ id: 'marital', label: 'Marital status', rows: place.marital })
   if (place.education?.length) tabs.push({ id: 'education', label: 'Education', rows: place.education })
-  if (place.tenure?.length) tabs.push({ id: 'tenure', label: 'Tenure', rows: place.tenure })
+  if (place.tenure?.length) tabs.push({ id: 'tenure', label: 'Property', rows: place.tenure })
   if (place.lighting?.length) tabs.push({ id: 'lighting', label: 'Lighting', rows: place.lighting })
   return tabs
 }
