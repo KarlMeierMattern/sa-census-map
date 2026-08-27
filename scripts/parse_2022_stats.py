@@ -356,12 +356,50 @@ PROV_POP_NAMES = {
     "limpopo": "LIM",
 }
 
+# South African thousands formatting: "3 956 875" or "991 876" (never run digits together).
+POP_NUM_RE = re.compile(r"\d{1,3}(?: \d{3}){1,2}")
+MIN_PROV_POP = 500_000
+MAX_PROV_POP = 20_000_000
 
-def parse_province_population(text: str) -> dict[str, int]:
-    """National Table 2.1: {province_code: Census 2022 population}."""
+
+def _pop_numbers(line: str) -> list[int]:
+    return [int(match.replace(" ", "")) for match in POP_NUM_RE.findall(line)]
+
+
+def _province_pop_from_line(line: str) -> int | None:
+    nums = _pop_numbers(line)
+    big = [value for value in nums if value >= MIN_PROV_POP]
+    if len(big) >= 4:
+        return big[3]
+    if len(big) == 3:
+        return big[2]
+    return None
+
+
+def _province_population_chunk(text: str) -> str:
     from build_2022 import longest_table
 
-    chunk = longest_table(text, "Table 2.1:")
+    for heading in (
+        "Table 2.1: Population distribution by province",
+        "Distribution of population by province and sex, Census 2022",
+    ):
+        chunk = longest_table(text, heading)
+        if not chunk:
+            continue
+        hits = 0
+        for line in chunk.splitlines():
+            low = line.strip().lower()
+            if any(low.startswith(name) for name in PROV_POP_NAMES):
+                if _province_pop_from_line(line) is not None:
+                    hits += 1
+        if hits >= 5:
+            return chunk
+    return ""
+
+
+def parse_province_population(text: str) -> dict[str, int]:
+    """National/provincial population table: {province_code: Census 2022 population}."""
+    chunk = _province_population_chunk(text)
     out: dict[str, int] = {}
     for line in chunk.splitlines():
         low = line.strip().lower()
@@ -372,9 +410,10 @@ def parse_province_population(text: str) -> dict[str, int]:
                 break
         if not code:
             continue
-        nums = [int(n.replace(" ", "")) for n in re.findall(r"\d{1,3}(?: \d{3})+|\d+", line)]
-        if len(nums) >= 4:
-            out[code] = nums[3]
+        pop = _province_pop_from_line(line)
+        if pop is None or not (MIN_PROV_POP <= pop <= MAX_PROV_POP):
+            continue
+        out[code] = pop
     return out
 
 
@@ -412,7 +451,9 @@ def parse_all_profiles(pdf_dir: Path | None = None) -> dict:
         prov = parsed.get("province")
         if not prov:
             continue
-        national_pop.update(parsed.get("population") or {})
+        for code, pop in (parsed.get("population") or {}).items():
+            if MIN_PROV_POP <= int(pop) <= MAX_PROV_POP:
+                national_pop[code] = int(pop)
         provinces.setdefault(prov, {})
         provinces[prov]["language"] = parsed.get("language") or provinces[prov].get("language") or {}
         provinces[prov]["religion"] = parsed.get("religion") or provinces[prov].get("religion") or {}
