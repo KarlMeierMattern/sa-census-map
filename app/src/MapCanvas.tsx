@@ -72,23 +72,6 @@ function mosaicPaint(zoomOut: string, zoomIn: string): ExpressionSpecification {
   ]
 }
 
-const SA_BOUNDS: [[number, number], [number, number]] = [
-  [16.0, -35.0],
-  [33.2, -21.8],
-]
-
-function isMobileView() {
-  return window.innerWidth < 721
-}
-
-function fitSouthAfrica(map: Map) {
-  map.setMinZoom(2.5)
-  map.fitBounds(SA_BOUNDS, {
-    padding: { top: 56, bottom: 48, left: 20, right: 20 },
-    duration: 0,
-  })
-}
-
 type Props = {
   vintage: Vintage
   mode: 'language' | 'group' | 'born'
@@ -147,7 +130,6 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
     if (!container) return
     ensureProtocol()
     setFail('')
-    const mobile = isMobileView()
     let map: Map
     try {
       map = new Map({
@@ -164,8 +146,8 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
           ],
         },
         center: [24.7, -28.5],
-        zoom: mobile ? 4 : 5.05,
-        minZoom: mobile ? 2.5 : 5,
+        zoom: 5.05,
+        minZoom: 5,
         maxZoom: 13,
         attributionControl: false,
       })
@@ -210,14 +192,6 @@ export function MapCanvas({ vintage, mode, highlight, onPlace, flyTo }: Props) {
         },
       })
       applyPaint(map)
-      if (mobile) {
-        const fit = () => {
-          map.resize()
-          fitSouthAfrica(map)
-        }
-        fit()
-        requestAnimationFrame(fit)
-      }
     })
 
     map.on('click', 'mosaic-fill', (event: MapLayerMouseEvent) => {
