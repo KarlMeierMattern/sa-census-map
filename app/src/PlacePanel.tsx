@@ -201,7 +201,7 @@ export function PlacePanel(props: Props) {
 
   useEffect(() => {
     resetSnap()
-  }, [place.name, place.mn, place.pr, place.kind, mode, resetSnap])
+  }, [place.name, place.mn, place.pr, place.kind, resetSnap])
 
   const showAllRows = !mobile || snap === 'expanded'
   const visibleRows = showAllRows ? rows : rows.slice(0, 5)
