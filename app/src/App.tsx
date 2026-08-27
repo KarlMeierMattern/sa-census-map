@@ -272,7 +272,7 @@ export default function App() {
                 setHighlight(null)
               }}
             >
-              Tenure
+              Property
             </button>
             <button
               type="button"
