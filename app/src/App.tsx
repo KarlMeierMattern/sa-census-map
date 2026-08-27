@@ -280,7 +280,6 @@ export default function App() {
           mode={mode}
           languages={meta.languages}
           groups={meta.populationGroups}
-          source={vintage.source}
           mobile={mobile}
           onClose={() => setPlace(null)}
         />

@@ -9,12 +9,11 @@ type Props = {
   mode: 'language' | 'group' | 'born'
   languages: Language[]
   groups: Language[]
-  source: string
   mobile: boolean
   onClose: () => void
 }
 
-export function PlacePanel({ place, mode, languages, groups, source, mobile, onClose }: Props) {
+export function PlacePanel({ place, mode, languages, groups, mobile, onClose }: Props) {
   const catalog = mode === 'language' ? languages : groups
   const rows = mode === 'language' ? place.mix : place.rmix
   const where = [place.mn, place.pr].filter(Boolean).join(' · ')
@@ -49,14 +48,6 @@ export function PlacePanel({ place, mode, languages, groups, source, mobile, onC
           )
         })
       )}
-      <p className="note">
-        {mode === 'language'
-          ? 'Household first language. Shares can be small in mixed neighbourhoods.'
-          : mode === 'group'
-            ? 'Population group as recorded in the census.'
-            : 'Share born outside South Africa, where the 2022 municipal table exists.'}{' '}
-        {source}
-      </p>
     </aside>
   )
 }
