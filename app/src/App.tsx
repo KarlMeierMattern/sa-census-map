@@ -50,6 +50,7 @@ async function searchPlaces(query: string): Promise<Suggest[]> {
 
 export default function App() {
   const mobile = useMobile()
+  const [chromeOpen, setChromeOpen] = useState(() => window.innerWidth >= 721)
   const [meta, setMeta] = useState<Meta | null>(null)
   const [error, setError] = useState('')
   const [vintageId, setVintageId] = useState('sal-2011')
@@ -143,7 +144,22 @@ export default function App() {
         flyTo={flyTo}
       />
       <div className="chrome">
+        {mobile && !chromeOpen ? (
+          <button type="button" className="chrome-toggle" onClick={() => setChromeOpen(true)}>
+            Search &amp; filters
+          </button>
+        ) : (
         <div className="card">
+          {mobile && (
+            <button
+              className="close"
+              type="button"
+              onClick={() => setChromeOpen(false)}
+              aria-label="Hide panel"
+            >
+              ×
+            </button>
+          )}
           <h1 className="title">A South African Mosaic</h1>
           <p className="dek">
             This map shows the language people most often spoke in the household. It is not ancestry,
@@ -256,6 +272,7 @@ export default function App() {
             view. {meta.attribution}
           </p>
         </div>
+        )}
       </div>
       {place && (
         <PlacePanel

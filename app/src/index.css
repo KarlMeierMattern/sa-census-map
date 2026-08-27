@@ -79,10 +79,21 @@ input {
 }
 
 .card {
+  position: relative;
   background: var(--paper);
   border: 1px solid var(--line);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   padding: 18px 18px 14px;
+}
+
+.chrome-toggle {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .title {
@@ -311,6 +322,12 @@ input {
   }
   .card {
     padding: 14px 14px 12px;
+    max-height: calc(100vh - 80px);
+    overflow: auto;
+  }
+  .card .close {
+    top: 8px;
+    right: 8px;
   }
   .legend {
     display: none;
