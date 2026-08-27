@@ -59,8 +59,14 @@ export const MUNI_ZOOM = 6.5
 
 export const MUNI_ONLY_MODES: MapMode[] = ['born', 'marital', 'education', 'tenure', 'lighting']
 
+export const PROVINCE_ONLY_MODES: MapMode[] = ['religion']
+
 export function isMuniOnlyMode(mode: MapMode) {
   return MUNI_ONLY_MODES.includes(mode)
+}
+
+export function isProvinceOnlyMode(mode: MapMode) {
+  return PROVINCE_ONLY_MODES.includes(mode)
 }
 
 export type PlaceInfo = {

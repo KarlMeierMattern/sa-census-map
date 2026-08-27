@@ -11,7 +11,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
 import type { Language, MapMode, PlaceInfo, Vintage } from './types'
-import { isMuniOnlyMode, MUNI_ZOOM } from './types'
+import { isMuniOnlyMode, isProvinceOnlyMode, MUNI_ZOOM } from './types'
 
 setWorkerUrl(
   import.meta.env.DEV
@@ -125,6 +125,7 @@ type Props = {
   flyTo: { lng: number; lat: number } | null
   onZoomChange?: (zoom: number) => void
   zoomToMunicipalitiesTick?: number
+  zoomToProvincesTick?: number
 }
 
 export function MapCanvas({
@@ -136,6 +137,7 @@ export function MapCanvas({
   flyTo,
   onZoomChange,
   zoomToMunicipalitiesTick,
+  zoomToProvincesTick,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
@@ -155,7 +157,9 @@ export function MapCanvas({
   const interactiveVintage = vintage.id === 'muni-2022'
   const hasProvinces = Boolean(vintage.provinceTiles)
   const muniModeActive = isMuniOnlyMode(mode)
+  const provinceModeActive = isProvinceOnlyMode(mode)
   const showMuniZoomHint = hasProvinces && muniModeActive && zoom < MUNI_ZOOM
+  const showProvZoomHint = hasProvinces && provinceModeActive && zoom >= MUNI_ZOOM
 
   function applyPaint(map: Map, layerId = 'mosaic-fill') {
     if (!map.getLayer(layerId)) return
@@ -168,7 +172,15 @@ export function MapCanvas({
       map.setPaintProperty(layerId, 'fill-opacity', 0.55)
       return
     }
+    if (layerId === 'mosaic-fill' && isProvinceOnlyMode(currentMode) && zoom >= MUNI_ZOOM) {
+      map.setPaintProperty(layerId, 'fill-color', '#3a3834')
+      map.setPaintProperty(layerId, 'fill-opacity', 0.55)
+      return
+    }
     if (isProvinceLayer) {
+      map.setPaintProperty(layerId, 'fill-opacity', 0.94)
+    }
+    if (layerId === 'mosaic-fill') {
       map.setPaintProperty(layerId, 'fill-opacity', 0.94)
     }
 
@@ -486,6 +498,12 @@ export function MapCanvas({
   }, [zoomToMunicipalitiesTick])
 
   useEffect(() => {
+    const map = mapRef.current
+    if (!map || !zoomToProvincesTick) return
+    map.flyTo({ zoom: 5.2, essential: true })
+  }, [zoomToProvincesTick])
+
+  useEffect(() => {
     if (!flyTo || !mapRef.current) return
     mapRef.current.flyTo({ center: [flyTo.lng, flyTo.lat], zoom: 11, essential: true })
   }, [flyTo])
@@ -496,6 +514,11 @@ export function MapCanvas({
       {showMuniZoomHint && (
         <div className="map-zoom-banner" aria-live="polite">
           Zoom in to see this by municipality
+        </div>
+      )}
+      {showProvZoomHint && (
+        <div className="map-zoom-banner" aria-live="polite">
+          Zoom out to see this by province
         </div>
       )}
       {hoverTip && (

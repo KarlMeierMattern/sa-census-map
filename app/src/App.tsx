@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MapCanvas } from './MapCanvas'
 import { PlacePanel } from './PlacePanel'
 import type { Language, MapMode, Meta, PlaceInfo, Suggest, Vintage } from './types'
-import { isMuniOnlyMode, MODE_LABELS, MUNI_ZOOM } from './types'
+import { isMuniOnlyMode, isProvinceOnlyMode, MODE_LABELS, MUNI_ZOOM } from './types'
 
 function useMobile() {
   const [mobile, setMobile] = useState(() => window.innerWidth < 721)
@@ -66,6 +66,7 @@ export default function App() {
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null)
   const [mapZoom, setMapZoom] = useState(5.05)
   const [zoomToMunicipalitiesTick, setZoomToMunicipalitiesTick] = useState(0)
+  const [zoomToProvincesTick, setZoomToProvincesTick] = useState(0)
 
   useEffect(() => {
     fetch('/meta.json')
@@ -139,6 +140,10 @@ export default function App() {
     if (isMuniOnlyMode(next) && mapZoom < MUNI_ZOOM) {
       setZoomToMunicipalitiesTick((tick) => tick + 1)
     }
+    if (isProvinceOnlyMode(next) && mapZoom >= MUNI_ZOOM) {
+      setPlace(null)
+      setZoomToProvincesTick((tick) => tick + 1)
+    }
   }
 
   function choose(item: Suggest) {
@@ -179,6 +184,7 @@ export default function App() {
         flyTo={flyTo}
         onZoomChange={setMapZoom}
         zoomToMunicipalitiesTick={zoomToMunicipalitiesTick}
+        zoomToProvincesTick={zoomToProvincesTick}
       />
       <div className="chrome">
         {mobile && !chromeOpen ? (
@@ -297,6 +303,14 @@ export default function App() {
               {MODE_LABELS[mode]} is only available at municipality level.{' '}
               <button type="button" onClick={() => setZoomToMunicipalitiesTick((tick) => tick + 1)}>
                 Zoom in
+              </button>
+            </p>
+          )}
+          {isProvinceOnlyMode(mode) && mapZoom >= MUNI_ZOOM && (
+            <p className="zoom-hint">
+              {MODE_LABELS[mode]} is only available at province level.{' '}
+              <button type="button" onClick={() => setZoomToProvincesTick((tick) => tick + 1)}>
+                Zoom out
               </button>
             </p>
           )}
