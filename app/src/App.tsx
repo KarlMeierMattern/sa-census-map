@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MapCanvas } from './MapCanvas'
 import { PlacePanel } from './PlacePanel'
-import type { Language, Meta, PlaceInfo, Suggest, Vintage } from './types'
+import type { Language, MapMode, Meta, PlaceInfo, Suggest, Vintage } from './types'
 
 function useMobile() {
   const [mobile, setMobile] = useState(() => window.innerWidth < 721)
@@ -57,8 +57,8 @@ export default function App() {
   const [chromeOpen, setChromeOpen] = useState(() => window.innerWidth >= 721)
   const [meta, setMeta] = useState<Meta | null>(null)
   const [error, setError] = useState('')
-  const [vintageId, setVintageId] = useState('sal-2011')
-  const [mode, setMode] = useState<'language' | 'group' | 'born'>('language')
+  const [vintageId, setVintageId] = useState('muni-2022')
+  const [mode, setMode] = useState<MapMode>('language')
   const [highlight, setHighlight] = useState<Language | null>(null)
   const [place, setPlace] = useState<PlaceInfo | null>(null)
   const [query, setQuery] = useState('')
@@ -73,14 +73,30 @@ export default function App() {
       })
       .then((data: Meta) => {
         setMeta(data)
-        setVintageId(data.vintages[0]?.id || 'sal-2011')
+        const preferred = data.vintages.find((item) => item.id === 'muni-2022') || data.vintages[0]
+        setVintageId(preferred?.id || 'sal-2011')
       })
       .catch((err: Error) => setError(err.message))
   }, [])
 
   const vintage: Vintage | undefined = meta?.vintages.find((item) => item.id === vintageId) || meta?.vintages[0]
 
-  const catalog = mode === 'language' ? meta?.languages || [] : meta?.populationGroups || []
+  const catalog =
+    mode === 'language'
+      ? meta?.languages || []
+      : mode === 'group'
+        ? meta?.populationGroups || []
+        : mode === 'marital'
+          ? meta?.maritalGroups || []
+          : mode === 'education'
+            ? meta?.educationGroups || []
+            : mode === 'tenure'
+              ? meta?.tenureGroups || []
+              : mode === 'lighting'
+                ? meta?.lightingGroups || []
+                : mode === 'religion'
+                  ? meta?.religionGroups || []
+                  : meta?.populationGroups || []
 
   const languageSuggestions = useMemo(() => {
     const q = query.trim()
@@ -252,6 +268,62 @@ export default function App() {
                 Foreign-born
               </button>
             )}
+            {vintage.hasExtendedStats && (
+              <>
+                <button
+                  type="button"
+                  className={mode === 'marital' && !highlight ? 'active' : ''}
+                  onClick={() => {
+                    setMode('marital')
+                    setHighlight(null)
+                  }}
+                >
+                  Marital status
+                </button>
+                <button
+                  type="button"
+                  className={mode === 'education' && !highlight ? 'active' : ''}
+                  onClick={() => {
+                    setMode('education')
+                    setHighlight(null)
+                  }}
+                >
+                  Education
+                </button>
+                <button
+                  type="button"
+                  className={mode === 'tenure' && !highlight ? 'active' : ''}
+                  onClick={() => {
+                    setMode('tenure')
+                    setHighlight(null)
+                  }}
+                >
+                  Tenure
+                </button>
+                <button
+                  type="button"
+                  className={mode === 'lighting' && !highlight ? 'active' : ''}
+                  onClick={() => {
+                    setMode('lighting')
+                    setHighlight(null)
+                  }}
+                >
+                  Lighting
+                </button>
+                {vintage.provinceTiles && (
+                  <button
+                    type="button"
+                    className={mode === 'religion' && !highlight ? 'active' : ''}
+                    onClick={() => {
+                      setMode('religion')
+                      setHighlight(null)
+                    }}
+                  >
+                    Religion
+                  </button>
+                )}
+              </>
+            )}
             {highlight && (
               <button type="button" className="active" onClick={() => setHighlight(null)}>
                 Showing {highlight.label}
@@ -309,11 +381,16 @@ export default function App() {
             />
           )}
           <PlacePanel
-            key={`${place.name}-${place.mn || ''}-${place.pr || ''}`}
+            key={`${place.name}-${place.mn || ''}-${place.pr || ''}-${place.kind || ''}`}
             place={place}
             mode={mode}
             languages={meta.languages}
             groups={meta.populationGroups}
+            marital={meta.maritalGroups}
+            education={meta.educationGroups}
+            tenure={meta.tenureGroups}
+            lighting={meta.lightingGroups}
+            religion={meta.religionGroups}
             mobile={mobile}
             onClose={() => setPlace(null)}
           />

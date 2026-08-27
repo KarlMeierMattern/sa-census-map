@@ -33,6 +33,7 @@ pip install -r requirements.txt
 python scripts/fetch_data.py     # downloads shapefiles + Census 2011 counts into data/raw/
 python scripts/build_tiles.py    # builds sal-2011 + muni-2011 PMTiles
 python scripts/build_2022.py     # optional: adds 2022 municipality layer (see note)
+python scripts/build_2022_stats.py  # province view + marital/education/tenure/lighting
 ```
 
 Then upload the resulting `app/public/tiles/*.pmtiles` to your R2 bucket under a `tiles/`
@@ -49,7 +50,9 @@ publishes that table at municipality grain.
 **Note on 2022 data:** the Stats SA publications site is behind bot protection
 (Imperva/Incapsula), so `build_2022.py` cannot download the provincial-profile PDFs
 automatically. Download Reports 03-01-70 to 03-01-78 (2022) manually into `data/raw/pdfs/`
-as `profile-70.pdf` … `profile-78.pdf`, then re-run the script.
+as `profile-70.pdf` … `profile-78.pdf`, then run `build_2022_stats.py` (which also runs
+the 2022 municipality build). `build_2022_stats.py` adds province-level tiles and enriches
+municipalities with marital status, education, tenure, and lighting from the same PDFs.
 
 ## Data
 

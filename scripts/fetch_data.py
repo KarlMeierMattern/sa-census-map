@@ -27,7 +27,7 @@ API_URL = "https://census-api.frith.dev/graphql"
 
 # Shapefile component extensions (served uppercase, saved lowercase).
 SHP_EXTS = ("shp", "shx", "dbf", "prj")
-SHAPEFILES = ("SAL_APRI", "MN_SA_20")
+SHAPEFILES = ("SAL_APRI", "MN_SA_20", "PR_SA_20")
 
 # Variable IDs in the census API.
 VAR_LANGUAGE = "3"
