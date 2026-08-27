@@ -147,19 +147,23 @@ export default function App() {
   }
 
   function choose(item: Suggest) {
-    setQuery(item.label)
-    setSuggests([])
     if (item.kind === 'language') {
+      setQuery(item.label)
+      setSuggests([])
       setMode('language')
       setHighlight(meta?.languages.find((row) => row.id === item.id) || null)
       return
     }
     if (item.kind === 'group') {
+      setQuery(item.label)
+      setSuggests([])
       setMode('group')
       setHighlight(meta?.populationGroups.find((row) => row.id === item.id) || null)
       return
     }
     if (item.lng != null && item.lat != null) {
+      setQuery('')
+      setSuggests([])
       setHighlight(null)
       setFlyTo({ lng: item.lng, lat: item.lat })
       if (mobile) setChromeOpen(false)
