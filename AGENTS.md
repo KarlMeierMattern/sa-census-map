@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Tiles are served from Cloudflare R2 by default (`VITE_TILES_BASE_URL` in `app/.env`). Set it empty to use locally built tiles in `app/public/tiles/`.
+Tiles are served from Cloudflare R2 by default (`VITE_TILES_BASE_URL` in `app/.env`). The province layer (`app/public/tiles/province-2022.pmtiles`) is committed with the app so population fixes deploy with Vercel. Municipality tiles stay on R2.
 
 ## Rebuilding tiles
 
@@ -25,4 +25,4 @@ source .venv/bin/activate
 python scripts/build_2022_stats.py
 ```
 
-Upload `app/public/tiles/*.pmtiles` to R2 after rebuilding.
+Upload `app/public/tiles/muni-2022.pmtiles` to R2 after rebuilding. Province tiles ship with the app.

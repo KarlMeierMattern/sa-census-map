@@ -34,6 +34,13 @@ function tilesUrl(path: string) {
   return `pmtiles://${base.replace(/\/$/, '')}${path}`
 }
 
+/** Province tile is small enough to ship with the app; keeps population fixes off stale R2 copies. */
+function provinceTilesUrl(path: string) {
+  if (/^https?:\/\//.test(path)) return `pmtiles://${path}`
+  const base = window.location.origin
+  return `pmtiles://${base.replace(/\/$/, '')}${path}`
+}
+
 function parseMix(raw: unknown): PlaceInfo['mix'] {
   if (typeof raw !== 'string') return []
   try {
@@ -274,7 +281,7 @@ export function MapCanvas({
       if (hasProvinces && vintage.provinceTiles && vintage.provinceLayer) {
         map.addSource('provinces', {
           type: 'vector',
-          url: tilesUrl(vintage.provinceTiles),
+          url: provinceTilesUrl(vintage.provinceTiles),
         })
         map.addLayer({
           id: 'province-fill',
