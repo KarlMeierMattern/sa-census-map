@@ -10,7 +10,7 @@ import { Protocol } from 'pmtiles'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
-import type { Language, PlaceInfo, Vintage } from './types'
+import type { Language, MapMode, PlaceInfo, Vintage } from './types'
 
 setWorkerUrl(
   import.meta.env.DEV
@@ -28,8 +28,6 @@ function ensureProtocol() {
 }
 
 function tilesUrl(path: string) {
-  // Absolute URLs (e.g. an R2/CDN host) pass straight through; otherwise resolve
-  // against VITE_TILES_BASE_URL when set, falling back to the current origin.
   if (/^https?:\/\//.test(path)) return `pmtiles://${path}`
   const base = import.meta.env.VITE_TILES_BASE_URL || window.location.origin
   return `pmtiles://${base.replace(/\/$/, '')}${path}`
@@ -72,9 +70,10 @@ function mosaicPaint(zoomOut: string, zoomIn: string): ExpressionSpecification {
   ]
 }
 
-function placeFilter(place: { name: string; mn?: string }): FilterSpecification {
+function placeFilter(place: { name: string; mn?: string; pr?: string }): FilterSpecification {
   const filters: ExpressionSpecification[] = [['==', ['get', 'name'], place.name]]
   if (place.mn) filters.push(['==', ['get', 'mn'], place.mn])
+  if (place.pr && !place.mn) filters.push(['==', ['get', 'pr'], place.pr])
   return ['all', ...filters] as FilterSpecification
 }
 
@@ -88,9 +87,37 @@ function isPointerDevice() {
   return window.matchMedia('(hover: hover) and (pointer: fine)').matches
 }
 
+const EXTENDED_MODES: Record<string, { out: string; inn: string; prefix: string }> = {
+  marital: { out: 'maritalc0', inn: 'maritalc1', prefix: 'marital' },
+  education: { out: 'educationc0', inn: 'educationc1', prefix: 'education' },
+  tenure: { out: 'tenurec0', inn: 'tenurec1', prefix: 'tenure' },
+  lighting: { out: 'lightingc0', inn: 'lightingc1', prefix: 'lighting' },
+  religion: { out: 'religionc0', inn: 'religionc1', prefix: 'religion' },
+}
+
+function propsToPlace(p: Record<string, unknown> | null | undefined): PlaceInfo {
+  const kind = p?.kind === 'province' ? 'province' : 'municipality'
+  return {
+    name: String(p?.name || 'This place'),
+    mn: p?.mn ? String(p.mn) : undefined,
+    pr: p?.pr ? String(p.pr) : undefined,
+    pop: Number(p?.pop || 0),
+    area: p?.area ? Number(p.area) : undefined,
+    kind,
+    mix: parseMix(p?.mix),
+    rmix: parseMix(p?.rmix),
+    fb: Number(p?.fb || 0),
+    marital: parseMix(p?.maritalmix),
+    education: parseMix(p?.educationmix),
+    tenure: parseMix(p?.tenuremix),
+    lighting: parseMix(p?.lightingmix),
+    religion: parseMix(p?.religionmix),
+  }
+}
+
 type Props = {
   vintage: Vintage
-  mode: 'language' | 'group' | 'born'
+  mode: MapMode
   highlight: Language | null
   selectedPlace: PlaceInfo | null
   onPlace: (place: PlaceInfo | null) => void
@@ -111,18 +138,24 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
   highlightRef.current = highlight
   selectedPlaceRef.current = selectedPlace
   const interactiveVintage = vintage.id === 'muni-2022'
+  const hasProvinces = Boolean(vintage.provinceTiles)
 
-  function applyPaint(map: Map) {
-    if (!map.getLayer('mosaic-fill')) return
+  function applyPaint(map: Map, layerId = 'mosaic-fill') {
+    if (!map.getLayer(layerId)) return
     const current = highlightRef.current
     const currentMode = modeRef.current
+    const extended = EXTENDED_MODES[currentMode]
     if (current) {
+      if (extended) {
+        map.setPaintProperty(layerId, 'fill-color', highlightPaint(`${extended.prefix}_${current.id}`, current.color))
+        return
+      }
       const field = currentMode === 'language' ? `s_${current.id}` : `r_${current.id}`
-      map.setPaintProperty('mosaic-fill', 'fill-color', highlightPaint(field, current.color))
+      map.setPaintProperty(layerId, 'fill-color', highlightPaint(field, current.color))
       return
     }
     if (currentMode === 'born') {
-      map.setPaintProperty('mosaic-fill', 'fill-color', [
+      map.setPaintProperty(layerId, 'fill-color', [
         'interpolate',
         ['linear'],
         ['get', 'fb'],
@@ -139,11 +172,15 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
       ])
       return
     }
-    if (currentMode === 'group') {
-      map.setPaintProperty('mosaic-fill', 'fill-color', mosaicPaint('rc0', 'rc1'))
+    if (extended) {
+      map.setPaintProperty(layerId, 'fill-color', mosaicPaint(extended.out, extended.inn))
       return
     }
-    map.setPaintProperty('mosaic-fill', 'fill-color', mosaicPaint('c0', 'c1'))
+    if (currentMode === 'group') {
+      map.setPaintProperty(layerId, 'fill-color', mosaicPaint('rc0', 'rc1'))
+      return
+    }
+    map.setPaintProperty(layerId, 'fill-color', mosaicPaint('c0', 'c1'))
   }
 
   useEffect(() => {
@@ -187,6 +224,35 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
     })
     map.on('load', () => {
       map.resize()
+      if (hasProvinces && vintage.provinceTiles && vintage.provinceLayer) {
+        map.addSource('provinces', {
+          type: 'vector',
+          url: tilesUrl(vintage.provinceTiles),
+        })
+        map.addLayer({
+          id: 'province-fill',
+          type: 'fill',
+          source: 'provinces',
+          'source-layer': vintage.provinceLayer,
+          maxzoom: 6.5,
+          paint: {
+            'fill-color': mosaicPaint('c0', 'c1'),
+            'fill-opacity': 0.94,
+          },
+        })
+        map.addLayer({
+          id: 'province-line',
+          type: 'line',
+          source: 'provinces',
+          'source-layer': vintage.provinceLayer,
+          maxzoom: 6.5,
+          paint: {
+            'line-color': '#0e0e0d',
+            'line-opacity': 0.35,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 6.5, 1.4],
+          },
+        })
+      }
       map.addSource('mosaic', {
         type: 'vector',
         url: tilesUrl(vintage.tiles),
@@ -196,6 +262,7 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
         type: 'fill',
         source: 'mosaic',
         'source-layer': vintage.layer,
+        minzoom: hasProvinces ? 6.5 : 0,
         paint: {
           'fill-color': mosaicPaint('c0', 'c1'),
           'fill-opacity': 0.94,
@@ -206,6 +273,7 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
         type: 'line',
         source: 'mosaic',
         'source-layer': vintage.layer,
+        minzoom: hasProvinces ? 6.5 : 0,
         paint: {
           'line-color': '#0e0e0d',
           'line-opacity': 0.28,
@@ -213,61 +281,83 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
         },
       })
       if (interactiveVintage) {
-        map.addLayer({
-          id: 'mosaic-selected-line',
-          type: 'line',
-          source: 'mosaic',
-          'source-layer': vintage.layer,
-          filter: EMPTY_FILTER,
-          paint: {
-            'line-color': '#f8f6f0',
-            'line-opacity': 0.92,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 3, 12, 4],
-          },
-        })
-        map.addLayer({
-          id: 'mosaic-hover-line',
-          type: 'line',
-          source: 'mosaic',
-          'source-layer': vintage.layer,
-          filter: EMPTY_FILTER,
-          paint: {
-            'line-color': '#f8f6f0',
-            'line-opacity': 0.72,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 10, 2.6, 12, 3.6],
-          },
-        })
+        const outlineLayers = hasProvinces
+          ? (['province-fill', 'mosaic-fill'] as const)
+          : (['mosaic-fill'] as const)
+        for (const layer of outlineLayers) {
+          const suffix = layer === 'province-fill' ? 'province' : 'muni'
+          map.addLayer({
+            id: `mosaic-selected-line-${suffix}`,
+            type: 'line',
+            source: layer === 'province-fill' ? 'provinces' : 'mosaic',
+            'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
+            maxzoom: layer === 'province-fill' ? 6.5 : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6.5 : undefined,
+            filter: EMPTY_FILTER,
+            paint: {
+              'line-color': '#f8f6f0',
+              'line-opacity': 0.92,
+              'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 3, 12, 4],
+            },
+          })
+          map.addLayer({
+            id: `mosaic-hover-line-${suffix}`,
+            type: 'line',
+            source: layer === 'province-fill' ? 'provinces' : 'mosaic',
+            'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
+            maxzoom: layer === 'province-fill' ? 6.5 : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6.5 : undefined,
+            filter: EMPTY_FILTER,
+            paint: {
+              'line-color': '#f8f6f0',
+              'line-opacity': 0.72,
+              'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 10, 2.6, 12, 3.6],
+            },
+          })
+        }
       }
-      applyPaint(map)
+      applyPaint(map, 'province-fill')
+      applyPaint(map, 'mosaic-fill')
     })
 
     const clearHover = () => {
-      if (!map.getLayer('mosaic-hover-line')) return
-      map.setFilter('mosaic-hover-line', EMPTY_FILTER)
+      for (const suffix of ['province', 'muni']) {
+        const id = `mosaic-hover-line-${suffix}`
+        if (map.getLayer(id)) map.setFilter(id, EMPTY_FILTER)
+      }
       setHoverTip(null)
     }
 
+    const interactiveLayers = () => {
+      const layers = ['mosaic-fill']
+      if (map.getLayer('province-fill')) layers.unshift('province-fill')
+      return layers
+    }
+
     const onMove = (event: MapMouseEvent) => {
-      if (!map.getLayer('mosaic-hover-line')) return
-      const feature = map.queryRenderedFeatures(event.point, { layers: ['mosaic-fill'] })[0]
+      const layers = interactiveLayers().filter((id) => map.getLayer(id))
+      const feature = map.queryRenderedFeatures(event.point, { layers })[0]
       if (!feature?.properties) {
         clearHover()
         return
       }
-      const name = String(feature.properties.name || 'This place')
-      const mn = feature.properties.mn ? String(feature.properties.mn) : undefined
-      const pr = feature.properties.pr ? String(feature.properties.pr) : undefined
-      const hoverPlace = { name, mn }
+      const place = propsToPlace(feature.properties)
+      const suffix = place.kind === 'province' ? 'province' : 'muni'
+      const hoverId = `mosaic-hover-line-${suffix}`
+      if (!map.getLayer(hoverId)) return
       const selected = selectedPlaceRef.current
       const isSelected =
-        selected && selected.name === name && (selected.mn || '') === (mn || '')
+        selected &&
+        selected.name === place.name &&
+        (selected.mn || '') === (place.mn || '') &&
+        (selected.pr || '') === (place.pr || '')
       if (isSelected) {
         clearHover()
         return
       }
-      map.setFilter('mosaic-hover-line', placeFilter(hoverPlace))
+      map.setFilter(hoverId, placeFilter(place))
       if (isPointerDevice()) {
-        setHoverTip({ label: placeLabel(name, mn, pr), x: event.point.x, y: event.point.y })
+        setHoverTip({ label: placeLabel(place.name, place.mn, place.pr), x: event.point.x, y: event.point.y })
       }
     }
 
@@ -275,7 +365,7 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
       clearHover()
     }
 
-    map.on('click', 'mosaic-fill', (event: MapLayerMouseEvent) => {
+    const onFeatureClick = (event: MapLayerMouseEvent) => {
       event.originalEvent?.stopPropagation()
       clearHover()
       const feature = event.features?.[0]
@@ -283,20 +373,20 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
         onPlaceRef.current(null)
         return
       }
-      const p = feature.properties
-      onPlaceRef.current({
-        name: String(p.name || 'This place'),
-        mn: p.mn ? String(p.mn) : undefined,
-        pr: p.pr ? String(p.pr) : undefined,
-        pop: Number(p.pop || 0),
-        mix: parseMix(p.mix),
-        rmix: parseMix(p.rmix),
-        fb: Number(p.fb || 0),
-      })
-    })
+      onPlaceRef.current(propsToPlace(feature.properties))
+    }
+
+    map.on('click', 'province-fill', onFeatureClick)
+    map.on('click', 'mosaic-fill', onFeatureClick)
     map.on('click', (event: MapMouseEvent) => {
-      const hits = map.queryRenderedFeatures(event.point, { layers: ['mosaic-fill'] })
+      const hits = map.queryRenderedFeatures(event.point, { layers: interactiveLayers() })
       if (!hits.length) onPlaceRef.current(null)
+    })
+    map.on('mouseenter', 'province-fill', () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'province-fill', () => {
+      map.getCanvas().style.cursor = ''
     })
     map.on('mouseenter', 'mosaic-fill', () => {
       map.getCanvas().style.cursor = 'pointer'
@@ -328,21 +418,29 @@ export function MapCanvas({ vintage, mode, highlight, selectedPlace, onPlace, fl
       }
       mapRef.current = null
     }
-  }, [vintage])
+  }, [vintage, hasProvinces, interactiveVintage])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || vintage.id !== 'muni-2022' || !map.getLayer('mosaic-selected-line')) return
+    if (!map || vintage.id !== 'muni-2022') return
+    const suffix = selectedPlace?.kind === 'province' ? 'province' : 'muni'
+    const layerId = `mosaic-selected-line-${suffix}`
+    if (!map.getLayer(layerId)) return
     if (selectedPlace) {
-      map.setFilter('mosaic-selected-line', placeFilter(selectedPlace))
+      map.setFilter(layerId, placeFilter(selectedPlace))
     } else {
-      map.setFilter('mosaic-selected-line', EMPTY_FILTER)
+      map.setFilter(layerId, EMPTY_FILTER)
     }
+    const other = suffix === 'province' ? 'muni' : 'province'
+    const otherId = `mosaic-selected-line-${other}`
+    if (map.getLayer(otherId)) map.setFilter(otherId, EMPTY_FILTER)
   }, [selectedPlace, vintage.id])
 
   useEffect(() => {
     const map = mapRef.current
-    if (map) applyPaint(map)
+    if (!map) return
+    applyPaint(map, 'province-fill')
+    applyPaint(map, 'mosaic-fill')
   }, [mode, highlight])
 
   useEffect(() => {

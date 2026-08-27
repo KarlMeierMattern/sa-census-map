@@ -160,6 +160,22 @@ def feature_props(name: str, stats: dict, extra: dict | None = None) -> dict:
         props[f"s_{row['id']}"] = int(round(1000 * lang_share.get(row["id"], 0)))
     for row in POP_GROUPS:
         props[f"r_{row['id']}"] = int(round(1000 * pop_share.get(row["id"], 0)))
+
+    for mix_key, palette in stats.get("extra_mixes") or []:
+        weights = stats.get(mix_key) or {}
+        total = sum(weights.values()) or 1
+        share = {k: v / total for k, v in weights.items()}
+        colors = {row["id"]: row["color"] for row in palette}
+        ranked = sorted(weights.items(), key=lambda kv: kv[1], reverse=True)
+        props[f"{mix_key}mix"] = json.dumps(
+            [[k, v, round(100 * v / total, 1)] for k, v in ranked if v > 0],
+            separators=(",", ":"),
+        )
+        props[f"{mix_key}c0"] = blend(share, colors, {row["id"]: 1 / len(palette) for row in palette}, True)
+        props[f"{mix_key}c1"] = blend(share, colors, {row["id"]: 1 / len(palette) for row in palette}, False)
+        for row in palette:
+            props[f"{mix_key}_{row['id']}"] = int(round(1000 * share.get(row["id"], 0)))
+
     if extra:
         props.update(extra)
     return props

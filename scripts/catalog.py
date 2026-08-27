@@ -53,3 +53,53 @@ NATIONAL_POP_SHARE = {
     "in": 0.025,
     "ot": 0.006,
 }
+
+MARITAL_GROUPS = [
+    {"id": "lma", "label": "Legally married", "color": "#e2b33a"},
+    {"id": "liv", "label": "Living together", "color": "#8fbf3a"},
+    {"id": "div", "label": "Divorced", "color": "#c44f9a"},
+    {"id": "sep", "label": "Separated", "color": "#d45a6a"},
+    {"id": "wid", "label": "Widowed", "color": "#7a8894"},
+    {"id": "nev", "label": "Never married", "color": "#4c7bd9"},
+]
+
+EDUCATION_GROUPS = [
+    {"id": "nos", "label": "No schooling", "color": "#8a2f2f"},
+    {"id": "pri", "label": "Some primary", "color": "#c47a3a"},
+    {"id": "prc", "label": "Completed primary", "color": "#e0a63a"},
+    {"id": "sec", "label": "Some secondary", "color": "#e2c94a"},
+    {"id": "mat", "label": "Completed secondary", "color": "#8fbf3a"},
+    {"id": "ter", "label": "Higher education", "color": "#2f8f5b"},
+    {"id": "edu", "label": "Other", "color": "#b9b3a8"},
+]
+
+TENURE_GROUPS = [
+    {"id": "own", "label": "Owned, fully paid", "color": "#2f8f5b"},
+    {"id": "pay", "label": "Owned, not paid off", "color": "#8fbf3a"},
+    {"id": "ren", "label": "Rented", "color": "#4c7bd9"},
+    {"id": "fre", "label": "Occupied rent-free", "color": "#e2b33a"},
+    {"id": "ten", "label": "Other", "color": "#c47a3a"},
+    {"id": "unk", "label": "Do not know", "color": "#b9b3a8"},
+]
+
+LIGHTING_GROUPS = [
+    {"id": "ele", "label": "Electricity", "color": "#e2b33a"},
+    {"id": "gas", "label": "Gas", "color": "#4c7bd9"},
+    {"id": "par", "label": "Paraffin", "color": "#c44f9a"},
+    {"id": "can", "label": "Candles", "color": "#e0702e"},
+    {"id": "sol", "label": "Solar", "color": "#2f8f5b"},
+    {"id": "lig", "label": "Other", "color": "#8fbf3a"},
+    {"id": "non", "label": "None", "color": "#7a8894"},
+]
+
+RELIGION_GROUPS = [
+    {"id": "chr", "label": "Christianity", "color": "#4c7bd9"},
+    {"id": "isl", "label": "Islam", "color": "#2f8f5b"},
+    {"id": "tra", "label": "Traditional African", "color": "#e0702e"},
+    {"id": "hin", "label": "Hinduism", "color": "#c44f9a"},
+    {"id": "jud", "label": "Judaism", "color": "#e2b33a"},
+    {"id": "bel", "label": "Other beliefs", "color": "#8a5ac8"},
+    {"id": "ath", "label": "Atheism/Agnosticism", "color": "#7a8894"},
+    {"id": "nrp", "label": "No affiliation", "color": "#b9b3a8"},
+    {"id": "rot", "label": "Other", "color": "#9aa0a6"},
+]
