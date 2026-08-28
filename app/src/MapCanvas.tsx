@@ -96,7 +96,7 @@ function mosaicPaint(zoomOut: string, zoomIn: string): ExpressionSpecification {
     'interpolate',
     ['linear'],
     ['zoom'],
-    4,
+    3,
     ['to-color', ['get', zoomOut]],
     11,
     ['to-color', ['get', zoomIn]],

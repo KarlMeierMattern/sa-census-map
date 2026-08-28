@@ -223,7 +223,7 @@ def write_geojsonl(shp_path: Path, out_path: Path, join: dict[str, dict], code_f
     return written
 
 
-def tippecanoe(src: Path, dest: Path, layer: str, maxzoom: int) -> None:
+def tippecanoe(src: Path, dest: Path, layer: str, maxzoom: int, minzoom: int = 5) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
         dest.unlink()
@@ -233,7 +233,7 @@ def tippecanoe(src: Path, dest: Path, layer: str, maxzoom: int) -> None:
         str(dest),
         "-l",
         layer,
-        "-Z5",
+        f"-Z{minzoom}",
         f"-z{maxzoom}",
         "--maximum-tile-bytes=2500000",
         "--drop-densest-as-needed",
