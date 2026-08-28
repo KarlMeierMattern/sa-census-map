@@ -28,9 +28,21 @@ function ensureProtocol() {
   protocolReady = true
 }
 
+/** Public read-only R2 bucket for municipality tiles (not shipped in the app bundle). */
+const PUBLIC_TILES_BASE_URL = 'https://pub-1b16e6dbfbeb4116b4cc74d50cc39952.r2.dev'
+
+function municipalityTilesBaseUrl() {
+  const fromEnv = import.meta.env.VITE_TILES_BASE_URL
+  if (fromEnv !== undefined) {
+    const trimmed = String(fromEnv).replace(/\/$/, '')
+    return trimmed || window.location.origin
+  }
+  return PUBLIC_TILES_BASE_URL
+}
+
 function tilesUrl(path: string) {
   if (/^https?:\/\//.test(path)) return `pmtiles://${path}`
-  const base = import.meta.env.VITE_TILES_BASE_URL || window.location.origin
+  const base = municipalityTilesBaseUrl()
   return `pmtiles://${base.replace(/\/$/, '')}${path}`
 }
 
@@ -321,7 +333,7 @@ export function MapCanvas({
           type: 'fill',
           source: 'provinces',
           'source-layer': vintage.provinceLayer,
-          maxzoom: 6.5,
+          maxzoom: 7,
           paint: {
             'fill-color': mosaicPaint('c0', 'c1'),
             'fill-opacity': 0.94,
@@ -332,7 +344,7 @@ export function MapCanvas({
           type: 'line',
           source: 'provinces',
           'source-layer': vintage.provinceLayer,
-          maxzoom: 6.5,
+          maxzoom: 7,
           paint: {
             'line-color': '#0e0e0d',
             'line-opacity': 0.35,
@@ -349,7 +361,7 @@ export function MapCanvas({
         type: 'fill',
         source: 'mosaic',
         'source-layer': vintage.layer,
-        minzoom: hasProvinces ? 6.5 : 0,
+        minzoom: hasProvinces ? 6 : 0,
         paint: {
           'fill-color': mosaicPaint('c0', 'c1'),
           'fill-opacity': 0.94,
@@ -360,7 +372,7 @@ export function MapCanvas({
         type: 'line',
         source: 'mosaic',
         'source-layer': vintage.layer,
-        minzoom: hasProvinces ? 6.5 : 0,
+        minzoom: hasProvinces ? 6 : 0,
         paint: {
           'line-color': '#0e0e0d',
           'line-opacity': 0.28,
@@ -378,8 +390,8 @@ export function MapCanvas({
             type: 'line',
             source: layer === 'province-fill' ? 'provinces' : 'mosaic',
             'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
-            maxzoom: layer === 'province-fill' ? 6.5 : undefined,
-            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6.5 : undefined,
+            maxzoom: layer === 'province-fill' ? 7 : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6 : undefined,
             filter: EMPTY_FILTER,
             paint: {
               'line-color': '#f8f6f0',
@@ -392,8 +404,8 @@ export function MapCanvas({
             type: 'line',
             source: layer === 'province-fill' ? 'provinces' : 'mosaic',
             'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
-            maxzoom: layer === 'province-fill' ? 6.5 : undefined,
-            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6.5 : undefined,
+            maxzoom: layer === 'province-fill' ? 7 : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6 : undefined,
             filter: EMPTY_FILTER,
             paint: {
               'line-color': '#f8f6f0',
