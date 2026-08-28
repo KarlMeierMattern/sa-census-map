@@ -64,7 +64,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [suggests, setSuggests] = useState<Suggest[]>([])
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null)
-  const [mapZoom, setMapZoom] = useState(5.05)
+  const [mapZoom, setMapZoom] = useState(4.75)
   const [zoomToMunicipalitiesTick, setZoomToMunicipalitiesTick] = useState(0)
   const [zoomToProvincesTick, setZoomToProvincesTick] = useState(0)
 

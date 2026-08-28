@@ -11,7 +11,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl'
 import type { Language, MapMode, PlaceInfo, Vintage } from './types'
-import { isMuniOnlyMode, isProvinceOnlyMode, MUNI_ZOOM } from './types'
+import { isMuniOnlyMode, isProvinceOnlyMode, MUNI_LAYER_MIN_ZOOM, MUNI_ZOOM, PROVINCE_LAYER_MAX_ZOOM } from './types'
 
 setWorkerUrl(
   import.meta.env.DEV
@@ -55,9 +55,14 @@ function provinceTilesUrl(path: string) {
 
 const SA_BOUNDS: [[number, number], [number, number]] = [[15.8, -35.8], [33.5, -21.5]]
 const DESKTOP_CENTER: [number, number] = [24.7, -28.5]
-const DESKTOP_ZOOM = 5.05
-const DESKTOP_MIN_ZOOM = 5
+const DESKTOP_ZOOM = 4.75
+const DESKTOP_MIN_ZOOM = 4.5
 const MOBILE_MIN_ZOOM = 3.2
+
+function countryPadding(mobile: boolean) {
+  if (mobile) return mobileMapPadding()
+  return { top: 28, bottom: 28, left: 28, right: 28 }
+}
 
 function mobileMapPadding() {
   const safeTop = Number.parseFloat(
@@ -69,10 +74,10 @@ function mobileMapPadding() {
   return { top: 76 + safeTop, bottom: 32 + safeBottom, left: 16, right: 16 }
 }
 
-function fitSouthAfricaOverview(map: Map, animated = false) {
+function fitCountryOverview(map: Map, mobile: boolean, animated = false) {
   map.resize()
   map.fitBounds(SA_BOUNDS, {
-    padding: mobileMapPadding(),
+    padding: countryPadding(mobile),
     duration: animated ? 1000 : 0,
     essential: true,
   })
@@ -200,7 +205,7 @@ export function MapCanvas({
   const selectedPlaceRef = useRef(selectedPlace)
   const [fail, setFail] = useState('')
   const [hoverTip, setHoverTip] = useState<{ label: string; x: number; y: number } | null>(null)
-  const [zoom, setZoom] = useState(5.05)
+  const [zoom, setZoom] = useState(DESKTOP_ZOOM)
   onPlaceRef.current = onPlace
   onZoomChangeRef.current = onZoomChange
   modeRef.current = mode
@@ -333,7 +338,7 @@ export function MapCanvas({
           type: 'fill',
           source: 'provinces',
           'source-layer': vintage.provinceLayer,
-          maxzoom: 7,
+          maxzoom: PROVINCE_LAYER_MAX_ZOOM,
           paint: {
             'fill-color': mosaicPaint('c0', 'c1'),
             'fill-opacity': 0.94,
@@ -344,11 +349,11 @@ export function MapCanvas({
           type: 'line',
           source: 'provinces',
           'source-layer': vintage.provinceLayer,
-          maxzoom: 7,
+          maxzoom: PROVINCE_LAYER_MAX_ZOOM,
           paint: {
             'line-color': '#0e0e0d',
             'line-opacity': 0.35,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 6.5, 1.4],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.6, MUNI_ZOOM, 1.2],
           },
         })
       }
@@ -361,7 +366,7 @@ export function MapCanvas({
         type: 'fill',
         source: 'mosaic',
         'source-layer': vintage.layer,
-        minzoom: hasProvinces ? 6 : 0,
+        minzoom: hasProvinces ? MUNI_LAYER_MIN_ZOOM : 0,
         paint: {
           'fill-color': mosaicPaint('c0', 'c1'),
           'fill-opacity': 0.94,
@@ -372,7 +377,7 @@ export function MapCanvas({
         type: 'line',
         source: 'mosaic',
         'source-layer': vintage.layer,
-        minzoom: hasProvinces ? 6 : 0,
+        minzoom: hasProvinces ? MUNI_LAYER_MIN_ZOOM : 0,
         paint: {
           'line-color': '#0e0e0d',
           'line-opacity': 0.28,
@@ -390,8 +395,8 @@ export function MapCanvas({
             type: 'line',
             source: layer === 'province-fill' ? 'provinces' : 'mosaic',
             'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
-            maxzoom: layer === 'province-fill' ? 7 : undefined,
-            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6 : undefined,
+            maxzoom: layer === 'province-fill' ? PROVINCE_LAYER_MAX_ZOOM : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? MUNI_LAYER_MIN_ZOOM : undefined,
             filter: EMPTY_FILTER,
             paint: {
               'line-color': '#f8f6f0',
@@ -404,8 +409,8 @@ export function MapCanvas({
             type: 'line',
             source: layer === 'province-fill' ? 'provinces' : 'mosaic',
             'source-layer': layer === 'province-fill' ? vintage.provinceLayer : vintage.layer,
-            maxzoom: layer === 'province-fill' ? 7 : undefined,
-            minzoom: layer === 'mosaic-fill' && hasProvinces ? 6 : undefined,
+            maxzoom: layer === 'province-fill' ? PROVINCE_LAYER_MAX_ZOOM : undefined,
+            minzoom: layer === 'mosaic-fill' && hasProvinces ? MUNI_LAYER_MIN_ZOOM : undefined,
             filter: EMPTY_FILTER,
             paint: {
               'line-color': '#f8f6f0',
@@ -419,11 +424,14 @@ export function MapCanvas({
       applyPaint(map, 'mosaic-fill')
       if (mobile) {
         map.once('idle', () => {
-          fitSouthAfricaOverview(map)
+          fitCountryOverview(map, true)
           reportZoom()
         })
       } else {
-        reportZoom()
+        map.once('idle', () => {
+          fitCountryOverview(map, false)
+          reportZoom()
+        })
       }
     })
 
@@ -533,10 +541,10 @@ export function MapCanvas({
     map.setMinZoom(mobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM)
     if (!mobile) return
     if (!map.isStyleLoaded()) {
-      map.once('load', () => fitSouthAfricaOverview(map))
+      map.once('load', () => fitCountryOverview(map, true))
       return
     }
-    fitSouthAfricaOverview(map)
+    fitCountryOverview(map, true)
   }, [mobile])
 
   useEffect(() => {
@@ -565,17 +573,13 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !zoomToMunicipalitiesTick) return
-    map.flyTo({ zoom: 7.2, essential: true })
+    map.flyTo({ zoom: MUNI_ZOOM + 0.25, essential: true })
   }, [zoomToMunicipalitiesTick])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !zoomToProvincesTick) return
-    if (mobile) {
-      fitSouthAfricaOverview(map, true)
-      return
-    }
-    map.flyTo({ zoom: 5.2, essential: true })
+    fitCountryOverview(map, mobile, true)
   }, [zoomToProvincesTick, mobile])
 
   useEffect(() => {
