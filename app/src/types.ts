@@ -55,7 +55,7 @@ export const MODE_LABELS: Record<MapMode, string> = {
 }
 
 /** Map zoom at which municipality tiles replace provinces (lower = muni sooner, country still in view). */
-export const MUNI_ZOOM = 5
+export const MUNI_ZOOM = 3.75
 
 /** Province vector layers hide at this zoom and above. */
 export const PROVINCE_LAYER_MAX_ZOOM = MUNI_ZOOM

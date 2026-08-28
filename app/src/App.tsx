@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MapCanvas } from './MapCanvas'
 import { PlacePanel } from './PlacePanel'
-import { hasSeenHelp, HelpButton, QuickHelp } from './QuickHelp'
 import type { Language, MapMode, Meta, PlaceInfo, Suggest, Vintage } from './types'
 import { isMuniOnlyMode, isProvinceOnlyMode, MODE_LABELS, MUNI_ZOOM } from './types'
 
@@ -68,7 +67,6 @@ export default function App() {
   const [mapZoom, setMapZoom] = useState(4.75)
   const [zoomToMunicipalitiesTick, setZoomToMunicipalitiesTick] = useState(0)
   const [zoomToProvincesTick, setZoomToProvincesTick] = useState(0)
-  const [helpOpen, setHelpOpen] = useState(() => !hasSeenHelp())
 
   useEffect(() => {
     fetch('/meta.json')
@@ -139,7 +137,7 @@ export default function App() {
   function selectMode(next: MapMode) {
     setMode(next)
     setHighlight(null)
-    if (isMuniOnlyMode(next) && mapZoom < MUNI_ZOOM) {
+    if (isMuniOnlyMode(next)) {
       setZoomToMunicipalitiesTick((tick) => tick + 1)
     }
     if (isProvinceOnlyMode(next) && mapZoom >= MUNI_ZOOM) {
@@ -193,15 +191,11 @@ export default function App() {
         zoomToMunicipalitiesTick={zoomToMunicipalitiesTick}
         zoomToProvincesTick={zoomToProvincesTick}
       />
-      <QuickHelp open={helpOpen} mobile={mobile} onClose={() => setHelpOpen(false)} />
       <div className="chrome">
         {mobile && !chromeOpen ? (
-          <div className="chrome-actions">
-            <button type="button" className="chrome-toggle" onClick={() => setChromeOpen(true)}>
-              Search &amp; filters
-            </button>
-            <HelpButton onClick={() => setHelpOpen(true)} />
-          </div>
+          <button type="button" className="chrome-toggle" onClick={() => setChromeOpen(true)}>
+            Search &amp; filters
+          </button>
         ) : (
         <div className="card">
           {mobile && (
@@ -214,10 +208,7 @@ export default function App() {
               ×
             </button>
           )}
-          <div className="card-head">
-            <h1 className="title">A South African Mosaic</h1>
-            <HelpButton onClick={() => setHelpOpen(true)} className="help-trigger-card" />
-          </div>
+          <h1 className="title">A South African Mosaic</h1>
           <p className="prompt">Tap a place to see how people there identify.</p>
           <div className="search">
             <input
