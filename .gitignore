@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 app/node_modules/
 app/dist/
+app/.env
 .DS_Store
 # Map tiles are hosted on Cloudflare R2 (see app/.env VITE_TILES_BASE_URL),
 # not committed — except the small province layer, which ships with the app.

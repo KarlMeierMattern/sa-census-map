@@ -4,11 +4,13 @@ Full-viewport language map of South Africa, modelled on the New York Times ances
 
 ## Run the map
 
-The map tiles are hosted on Cloudflare R2 (see `VITE_TILES_BASE_URL` in `app/.env`), so a
-fresh clone runs with no data build step — it streams tiles over HTTP range requests:
+The map tiles are hosted on Cloudflare R2 (see `VITE_TILES_BASE_URL` in `app/.env`, copied from
+`app/.env.example`), so a fresh clone runs with no data build step — it streams tiles over HTTP
+range requests:
 
 ```bash
 cd app
+cp .env.example .env   # set your public R2 bucket URL, or leave empty for local tiles
 npm install
 npm run dev
 ```
@@ -38,6 +40,12 @@ python scripts/build_2022_stats.py  # province view + marital/education/tenure/l
 
 Then upload the resulting `app/public/tiles/*.pmtiles` to your R2 bucket under a `tiles/`
 prefix (the bucket needs public read + CORS allowing `GET`/`HEAD` and the `Range` header).
+
+### Production deploy (Vercel)
+
+Set `VITE_TILES_BASE_URL` in the Vercel project environment to your **public** R2 bucket URL
+(`https://pub-….r2.dev`). This is not a secret — it is baked into the client bundle at build
+time. Do not put R2 API tokens or write credentials in `VITE_*` variables or in the repo.
 
 `scripts/fetch_data.py` downloads the boundary shapefiles from the Census 2011 GIS mirror
 and the Census 2011 first-language and population-group counts from the

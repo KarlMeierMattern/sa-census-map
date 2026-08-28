@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Tiles are served from Cloudflare R2 by default (`VITE_TILES_BASE_URL` in `app/.env`). The province layer (`app/public/tiles/province-2022.pmtiles`) is committed with the app so population fixes deploy with Vercel. Municipality tiles stay on R2.
+Tiles are served from Cloudflare R2 by default (`VITE_TILES_BASE_URL` in `app/.env`, copied from `app/.env.example`). The province layer (`app/public/tiles/province-2022.pmtiles`) is committed with the app so population fixes deploy with Vercel. Municipality tiles stay on R2.
 
 ## Rebuilding tiles
 
