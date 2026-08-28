@@ -56,7 +56,7 @@ function provinceTilesUrl(path: string) {
 const SA_BOUNDS: [[number, number], [number, number]] = [[15.8, -35.8], [33.5, -21.5]]
 const DESKTOP_CENTER: [number, number] = [24.7, -28.5]
 const DESKTOP_ZOOM = 4.75
-const DESKTOP_MIN_ZOOM = 3.2
+const DESKTOP_MIN_ZOOM = 4.5
 const MOBILE_MIN_ZOOM = 3.2
 
 function countryPadding(mobile: boolean) {
@@ -429,7 +429,7 @@ export function MapCanvas({
         })
       } else {
         map.once('idle', () => {
-          fitCountryOverview(map, false)
+          map.jumpTo({ center: DESKTOP_CENTER, zoom: DESKTOP_ZOOM })
           reportZoom()
         })
       }
@@ -573,8 +573,8 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !zoomToMunicipalitiesTick) return
-    fitCountryOverview(map, mobile, true)
-  }, [zoomToMunicipalitiesTick, mobile])
+    map.flyTo({ zoom: MUNI_ZOOM + 0.25, essential: true })
+  }, [zoomToMunicipalitiesTick])
 
   useEffect(() => {
     const map = mapRef.current

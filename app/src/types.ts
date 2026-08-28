@@ -54,11 +54,11 @@ export const MODE_LABELS: Record<MapMode, string> = {
   religion: 'Religion',
 }
 
-/** Map zoom at which municipality tiles replace provinces (lower = muni sooner, country still in view). */
-export const MUNI_ZOOM = 3.75
+/** Map zoom at which municipality tiles replace provinces for interaction and mode logic. */
+export const MUNI_ZOOM = 5
 
-/** Province vector layers hide at this zoom and above. */
-export const PROVINCE_LAYER_MAX_ZOOM = MUNI_ZOOM
+/** Province layers stay visible until this zoom (one step past muni minzoom to avoid a blank gap). */
+export const PROVINCE_LAYER_MAX_ZOOM = MUNI_ZOOM + 1
 
 /** Municipality vector layers show from this zoom and above. */
 export const MUNI_LAYER_MIN_ZOOM = MUNI_ZOOM

@@ -285,7 +285,7 @@ def main() -> None:
     write_geojsonl(RAW / "MN_SA_20.shp", muni_jsonl, muni_join, "MN_CODE", ["MN_NAME"])
 
     tippecanoe(prov_jsonl, TILES / "province-2022.pmtiles", "province", 8, minzoom=0)
-    tippecanoe(muni_jsonl, TILES / "muni-2022.pmtiles", "muni", 10, minzoom=0)
+    tippecanoe(muni_jsonl, TILES / "muni-2022.pmtiles", "muni", 10)
     write_meta()
 
 

@@ -137,7 +137,7 @@ export default function App() {
   function selectMode(next: MapMode) {
     setMode(next)
     setHighlight(null)
-    if (isMuniOnlyMode(next)) {
+    if (isMuniOnlyMode(next) && mapZoom < MUNI_ZOOM) {
       setZoomToMunicipalitiesTick((tick) => tick + 1)
     }
     if (isProvinceOnlyMode(next) && mapZoom >= MUNI_ZOOM) {
