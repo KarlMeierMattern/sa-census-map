@@ -50,7 +50,7 @@ export const MODE_LABELS: Record<MapMode, string> = {
   marital: 'Marital status',
   education: 'Education',
   tenure: 'Property',
-  lighting: 'Lighting',
+  lighting: 'Power',
   religion: 'Religion',
 }
 

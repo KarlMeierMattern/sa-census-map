@@ -295,7 +295,7 @@ export default function App() {
                 className={mode === 'lighting' && !highlight ? 'active' : ''}
                 onClick={() => selectMode('lighting')}
               >
-                Lighting
+                {MODE_LABELS.lighting}
               </button>
             </div>
           </div>
