@@ -209,10 +209,6 @@ export default function App() {
             </button>
           )}
           <h1 className="title">A South African Mosaic</h1>
-          <p className="dek">
-            This map shows the language people most often spoke in the household. It is not ancestry,
-            ethnicity, or mother tongue.
-          </p>
           <p className="prompt">Tap a place to see how people there identify.</p>
           <div className="search">
             <input
